@@ -1,3 +1,5 @@
+import Toast from '../../components/Toast';
+
 const upsertStream = async ({
     spotify_access_token,
     solana_wallet_address
@@ -28,6 +30,13 @@ const upsertStream = async ({
 
         console.log('Stream count response:', countStreamsData);
     } catch (countError) {
+        if (countError === 'Failed to fetch Spotify user profile') {
+            console.error('Failed to fetch Spotify user profile');
+            localStorage.removeItem('spotify_access_token');
+            window.dispatchEvent(new Event('spotifyTokenChanged'));
+            Toast({ message: 'Spotify session expired. Please reconnect your Spotify account.', type: 'error' });
+            return;
+        }
         console.error('Error counting streams:', countError);
         // Handle error (e.g., show error message to user)
     }

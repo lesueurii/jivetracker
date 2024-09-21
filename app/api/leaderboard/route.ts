@@ -3,18 +3,26 @@ import { kv } from '@vercel/kv'
 
 export async function GET() {
     try {
+        if (!kv) {
+            throw new Error('KV is not properly initialized')
+        }
         // Fetch all user data from KV
-        const users = await kv.hgetall('users') as Record<string, { streams: number, solana_wallet_address: string }>
+        const usersData = await kv.get('users')
+
+        if (!usersData) {
+            return NextResponse.json({ leaderboard: [] })
+        }
 
         // Sort users by stream count in descending order
-        const sortedUsers = Object.entries(users)
-            .sort(([, a], [, b]) => b.streams - a.streams)
+        const sortedUsers = Object.entries(usersData)
+            .map(([spotifyUserId, data]) => ({ spotifyUserId, ...data }))
+            .sort((a, b) => b.streams - a.streams)
             .slice(0, 25) // Get top 25 users
 
         // Format the leaderboard data
-        const leaderboard = sortedUsers.map(([userId, data], index) => ({
+        const leaderboard = sortedUsers.map((data, index) => ({
             rank: index + 1,
-            userId,
+            spotifyUserId: data.spotifyUserId,
             streamCount: data.streams,
             solanaWalletAddress: data.solana_wallet_address
         }))

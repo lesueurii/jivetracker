@@ -36,9 +36,6 @@ export default function Home() {
           </div>
           <hr className="border-1 border-gray-200 my-8 mx-8 w-full" />
           <div className="mx-8 w-full">
-            <h3 className="text-xl font-semibold mb-4">
-              Leaderboard
-            </h3>
             <Leaderboard />
             <div className="flex flex-col sm:flex-row justify-between items-center">
               <p

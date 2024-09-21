@@ -15,10 +15,21 @@ export default function SpotifyButton() {
         if (token) {
             setIsAuthenticated(true);
 
-            upsertStream({
-                spotify_access_token: token,
-                solana_wallet_address: sessionStorage.getItem('publicKey') || '',
-            });
+            const runUpsertStream = () => {
+                upsertStream({
+                    spotify_access_token: token,
+                    solana_wallet_address: sessionStorage.getItem('publicKey') || '',
+                });
+            };
+
+            // Run immediately
+            runUpsertStream();
+
+            // Set up interval to run every hour
+            const intervalId = setInterval(runUpsertStream, 60 * 60 * 1000);
+
+            // Clean up interval on component unmount
+            return () => clearInterval(intervalId);
         } else {
             // Check for callback
             const urlParams = new URLSearchParams(window.location.search);

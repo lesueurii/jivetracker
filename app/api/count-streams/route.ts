@@ -18,10 +18,14 @@ export async function GET(req: NextRequest) {
     console.log('Fetching Spotify user profile')
     const userProfile = await fetchSpotifyUserProfile(spotify_access_token)
     const spotifyUserId = userProfile.id
-    const streamCount = await kv.get(`${spotifyUserId}:streams`) as number | null
+    const users = await kv.get('users') as Record<string, any> | null
+    const streamCount = users && users[spotifyUserId] ? users[spotifyUserId].streams : null
     console.log('Fetched stream count:', streamCount)
     return NextResponse.json({ streamCount })
   } catch (error) {
+    if (error === 'Failed to fetch Spotify user profile') {
+      return NextResponse.json({ message: 'Refresh Token' }, { status: 401 })
+    }
     console.error('Error processing request:', error)
     return NextResponse.json({ message: 'Error processing request' }, { status: 500 })
   }
@@ -48,6 +52,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: 'Stream count updated successfully' })
   } catch (error) {
+    if (error === 'Failed to fetch Spotify user profile') {
+      return NextResponse.json({ message: 'Refresh Token' }, { status: 401 })
+    }
     console.error('Error processing request:', error)
     return NextResponse.json({ message: 'Error processing request' }, { status: 500 })
   }
@@ -70,24 +77,28 @@ async function fetchRecentStreams(accessToken: string) {
 }
 
 async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamCount: number, streamRecords: any[]) {
-  const key = `${spotifyUserId}:streams`
-  const existingCount = await kv.get(key) as number | null
+  const usersKey = 'users'
+  const users = await kv.get(usersKey) as Record<string, any> || {}
 
-  if (existingCount !== null) {
-    const existingStreamRecords = await kv.get(`${spotifyUserId}:stream_records`) as any[] | null || []
-    const updatedStreamRecords = Array.from(new Set([...existingStreamRecords, ...streamRecords]));
-
-    await kv.set(`${spotifyUserId}:stream_records`, updatedStreamRecords)
-
+  if (users[spotifyUserId]) {
+    const updatedStreamRecords = Array.from(new Set([...users[spotifyUserId].stream_records, ...streamRecords]));
     const updatedCount = updatedStreamRecords.length;
+
     console.log('Updating existing stream count for', spotifyUserId, solanaWalletAddress, updatedCount)
-    await kv.set(key, updatedCount)
+    users[spotifyUserId] = {
+      ...users[spotifyUserId],
+      solana_wallet_address: solanaWalletAddress,
+      streams: updatedCount,
+      stream_records: updatedStreamRecords
+    }
   } else {
     console.log('Inserting new stream count for', spotifyUserId, solanaWalletAddress, streamCount)
-    await kv.set(spotifyUserId, {
+    users[spotifyUserId] = {
       solana_wallet_address: solanaWalletAddress,
       streams: streamCount,
       stream_records: streamRecords
-    })
+    }
   }
+
+  await kv.set(usersKey, users)
 }
