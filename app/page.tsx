@@ -1,10 +1,5 @@
 "use client"
 
-import Image from 'next/image'
-import Link from 'next/link'
-import ViewCounter from '@/app/components/view-counter'
-import { Suspense } from 'react'
-import ExpandingArrow from '@/app/components/expanding-arrow'
 import RegistrationForm from '@/app/components/RegistrationForm'
 import HowItWorks from '@/app/components/HowItWorks'
 
