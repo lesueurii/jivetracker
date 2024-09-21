@@ -1,7 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 
-import AppWalletProvider from "@/components/AppWalletProvider";
+import AppWalletProvider from "@/app/components/AppWalletProvider";
 
 export const metadata = {
   title: 'Jive Tracker',

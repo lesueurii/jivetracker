@@ -2,24 +2,15 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import ViewCounter from '@/components/view-counter'
+import ViewCounter from '@/app/components/view-counter'
 import { Suspense } from 'react'
-import ExpandingArrow from '@/components/expanding-arrow'
-import RegistrationForm from '@/components/RegistrationForm'
-import HowItWorks from '@/components/HowItWorks'
+import ExpandingArrow from '@/app/components/expanding-arrow'
+import RegistrationForm from '@/app/components/RegistrationForm'
+import HowItWorks from '@/app/components/HowItWorks'
+
+import JiveLogo from '@/app/components/JiveLogo'
 
 export const dynamic = 'force-dynamic'
-
-function JiveLogo() {
-  return (
-    <Image
-      src="/logo.jpg"
-      alt="Jive Logo"
-      width={36}
-      height={36}
-    />
-  );
-}
 
 export default function Home() {
   return (

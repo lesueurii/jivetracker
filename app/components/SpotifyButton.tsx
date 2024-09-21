@@ -1,18 +1,25 @@
 "use client"
 
-"use client"
 import { useState, useEffect } from 'react';
 
-const CLIENT_ID = 'YOUR_SPOTIFY_CLIENT_ID';
-const REDIRECT_URI = 'http://localhost:3000/callback'; // Update this with your actual redirect URI
+const CLIENT_ID = '079c06e1f5bf431c8b90e58e9443b217';
+const REDIRECT_URI = `${typeof window !== 'undefined' ? window.location.origin : ''}`;
 
 export default function SpotifyButton() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('spotify_access_token');
         if (token) {
             setIsAuthenticated(true);
+        } else {
+            // Check for callback
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                exchangeCodeForToken(code);
+            }
         }
     }, []);
 
@@ -34,6 +41,43 @@ export default function SpotifyButton() {
             .replace(/=+$/, '');
     };
 
+    const exchangeCodeForToken = async (code: string) => {
+        setIsLoading(true);
+        const codeVerifier = localStorage.getItem('code_verifier');
+
+        const body = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: REDIRECT_URI,
+            client_id: CLIENT_ID,
+            code_verifier: codeVerifier!,
+        });
+
+        try {
+            const response = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            });
+
+            if (!response.ok) {
+                throw new Error('HTTP status ' + response.status);
+            }
+
+            const data = await response.json();
+            localStorage.setItem('spotify_access_token', data.access_token);
+            localStorage.setItem('spotify_refresh_token', data.refresh_token);
+            setIsAuthenticated(true);
+            // Clear the URL parameters
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (error) {
+            console.error('Error:', error);
+            // Handle error (e.g., show error message to user)
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleLogin = async () => {
         const codeVerifier = generateCodeVerifier(128);
         const codeChallenge = await generateCodeChallenge(codeVerifier);
@@ -46,7 +90,7 @@ export default function SpotifyButton() {
             redirect_uri: REDIRECT_URI,
             code_challenge_method: 'S256',
             code_challenge: codeChallenge,
-            scope: 'user-read-private user-read-email', // Add more scopes as needed
+            scope: 'user-read-recently-played',
         });
 
         window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
@@ -56,6 +100,10 @@ export default function SpotifyButton() {
         localStorage.removeItem('spotify_access_token');
         setIsAuthenticated(false);
     };
+
+    if (isLoading) {
+        return <div>Processing Spotify authentication...</div>;
+    }
 
     return (
         <div className="flex justify-start">

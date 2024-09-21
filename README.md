@@ -7,6 +7,13 @@ An open-source web app to track your recent Spotify activity. Not affiliated wit
 - Node.js 18+
 - pnpm 9+
 
+Copy the `.env.example` file to `.env.local` and fill in the values.
+
+Setup a Spotify Developer account and get client ID and client secret.
+In the Spotify Developer Dashboard, set the callback URL to `https://<domain>/callback`.
+
+Put the API client ID and client secret in the `.env.local` file.
+
 ## Development
 
 1. Clone the repository
