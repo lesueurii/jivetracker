@@ -169,7 +169,7 @@ export default function SpotifyButton() {
 
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded-lg max-w-md">
+                    <div className="bg-white p-6 rounded-lg max-w-lg w-full">
                         <h2 className="text-xl font-bold mb-4">Enter Spotify Client ID</h2>
                         <p className="mb-4">
                             To get your Spotify Client ID, please follow these steps:
