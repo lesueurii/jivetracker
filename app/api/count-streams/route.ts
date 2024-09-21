@@ -8,55 +8,36 @@ const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
 const JIVE_TRACK_ID = '2iFxaYqQX6yNusMzEUiaPf'
 
 export async function GET(req: NextRequest) {
-  console.log('Received get request')
   try {
-
     const spotify_access_token = req.nextUrl.searchParams.get('spotify_access_token')
     if (!spotify_access_token) {
       return NextResponse.json({ message: 'Missing spotify_access_token' }, { status: 400 })
     }
-    console.log('Fetching Spotify user profile')
-    const userProfile = await fetchSpotifyUserProfile(spotify_access_token)
-    const spotifyUserId = userProfile.id
+
+    const { id: spotifyUserId } = await fetchSpotifyUserProfile(spotify_access_token)
     const users = await kv.get('users') as Record<string, any> | null
-    const streamCount = users && users[spotifyUserId] ? users[spotifyUserId].streams : null
-    console.log('Fetched stream count:', streamCount)
+    const streamCount = users?.[spotifyUserId]?.streams ?? null
+
     return NextResponse.json({ streamCount })
-  } catch (error) {
-    if (error === 'Failed to fetch Spotify user profile') {
-      return NextResponse.json({ message: 'Refresh Token' }, { status: 401 })
-    }
-    console.error('Error processing request:', error)
-    return NextResponse.json({ message: 'Error processing request' }, { status: 500 })
+  } catch (error: any) {
+    return handleError(error)
   }
 }
 
 export async function POST(req: NextRequest) {
-  console.log('Received request')
   try {
     const { spotify_access_token, solana_wallet_address } = await req.json()
-
-    // Fetch Spotify user profile
-    const userProfile = await fetchSpotifyUserProfile(spotify_access_token)
-    const spotifyUserId = userProfile.id
-
-    // Fetch recent streams
+    const { id: spotifyUserId } = await fetchSpotifyUserProfile(spotify_access_token)
     const recentStreams = await fetchRecentStreams(spotify_access_token)
+
     const streamRecords = recentStreams.items
       .filter((item: any) => item.track.id === JIVE_TRACK_ID)
-      .map((item: any) => item.played_at);
-    const streamCount = streamRecords.length
+      .map((item: any) => item.played_at)
 
-    // Update or insert record in Vercel KV
-    await updateStreamCount(spotifyUserId, solana_wallet_address, streamCount, streamRecords)
-
+    await updateStreamCount(spotifyUserId, solana_wallet_address, streamRecords)
     return NextResponse.json({ message: 'Stream count updated successfully' })
   } catch (error) {
-    if (error === 'Failed to fetch Spotify user profile') {
-      return NextResponse.json({ message: 'Refresh Token' }, { status: 401 })
-    }
-    console.error('Error processing request:', error)
-    return NextResponse.json({ message: 'Error processing request' }, { status: 500 })
+    return handleError(error)
   }
 }
 
@@ -76,29 +57,29 @@ async function fetchRecentStreams(accessToken: string) {
   return response.json()
 }
 
-async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamCount: number, streamRecords: any[]) {
+async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamRecords: string[]) {
   const usersKey = 'users'
   const users = await kv.get(usersKey) as Record<string, any> || {}
 
-  if (users[spotifyUserId]) {
-    const updatedStreamRecords = Array.from(new Set([...users[spotifyUserId].stream_records, ...streamRecords]));
-    const updatedCount = updatedStreamRecords.length;
+  const existingUser = users[spotifyUserId] || {}
+  const updatedStreamRecords = Array.from(new Set([...existingUser.stream_records || [], ...streamRecords]))
+  const updatedCount = updatedStreamRecords.length
 
-    console.log('Updating existing stream count for', spotifyUserId, solanaWalletAddress, updatedCount)
-    users[spotifyUserId] = {
-      ...users[spotifyUserId],
-      solana_wallet_address: solanaWalletAddress,
-      streams: updatedCount,
-      stream_records: updatedStreamRecords
-    }
-  } else {
-    console.log('Inserting new stream count for', spotifyUserId, solanaWalletAddress, streamCount)
-    users[spotifyUserId] = {
-      solana_wallet_address: solanaWalletAddress,
-      streams: streamCount,
-      stream_records: streamRecords
-    }
+  users[spotifyUserId] = {
+    ...existingUser,
+    solana_wallet_address: solanaWalletAddress,
+    streams: updatedCount,
+    stream_records: updatedStreamRecords
   }
 
   await kv.set(usersKey, users)
+}
+
+function handleError(error: any) {
+  if (error.message === 'Failed to fetch Spotify user profile') {
+    return NextResponse.json({ message: 'Refresh Token' }, { status: 401 })
+  }
+
+  console.error('Error processing request:', error)
+  return NextResponse.json({ message: 'Error processing request' }, { status: 500 })
 }

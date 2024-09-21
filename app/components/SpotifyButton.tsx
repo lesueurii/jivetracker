@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import upsertStream from '../lib/helpers/upsert-stream';
 
-const CLIENT_ID = '079c06e1f5bf431c8b90e58e9443b217';
 const REDIRECT_URI = `${typeof window !== 'undefined' ? window.location.origin : ''}`;
 
 export default function SpotifyButton() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [clientId, setClientId] = useState(localStorage.getItem('spotify_client_id') || '');
 
     useEffect(() => {
         const token = localStorage.getItem('spotify_access_token');
@@ -38,6 +39,12 @@ export default function SpotifyButton() {
                 exchangeCodeForToken(code);
             }
         }
+
+        // Check if client ID exists in local storage
+        const storedClientId = localStorage.getItem('spotify_client_id');
+        if (storedClientId) {
+            setClientId(storedClientId);
+        }
     }, []);
 
     const generateCodeVerifier = (length: number) => {
@@ -66,7 +73,7 @@ export default function SpotifyButton() {
             grant_type: 'authorization_code',
             code: code,
             redirect_uri: REDIRECT_URI,
-            client_id: CLIENT_ID,
+            client_id: clientId,
             code_verifier: codeVerifier!,
         });
 
@@ -97,6 +104,27 @@ export default function SpotifyButton() {
     };
 
     const handleLogin = async () => {
+        const storedClientId = localStorage.getItem('spotify_client_id');
+        if (storedClientId) {
+            setClientId(storedClientId);
+            startAuthProcess();
+        } else {
+            setShowModal(true);
+        }
+    };
+
+    const handleModalSubmit = () => {
+        if (!clientId) {
+            alert('Please enter a valid Client ID');
+            return;
+        }
+
+        localStorage.setItem('spotify_client_id', clientId);
+        setShowModal(false);
+        startAuthProcess();
+    };
+
+    const startAuthProcess = async () => {
         const codeVerifier = generateCodeVerifier(128);
         const codeChallenge = await generateCodeChallenge(codeVerifier);
 
@@ -104,7 +132,7 @@ export default function SpotifyButton() {
         window.dispatchEvent(new Event('spotifyTokenChanged'));
 
         const params = new URLSearchParams({
-            client_id: CLIENT_ID,
+            client_id: clientId,
             response_type: 'code',
             redirect_uri: REDIRECT_URI,
             code_challenge_method: 'S256',
@@ -117,7 +145,9 @@ export default function SpotifyButton() {
 
     const handleLogout = () => {
         localStorage.removeItem('spotify_access_token');
+        localStorage.removeItem('spotify_client_id');
         setIsAuthenticated(false);
+        setClientId('');
         window.dispatchEvent(new Event('spotifyTokenChanged'));
     };
 
@@ -136,6 +166,49 @@ export default function SpotifyButton() {
                 </svg>
                 {isAuthenticated ? 'Disconnect' : 'Connect'}
             </button>
+
+            {showModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded-lg max-w-md">
+                        <h2 className="text-xl font-bold mb-4">Enter Spotify Client ID</h2>
+                        <p className="mb-4">
+                            To get your Spotify Client ID, please follow these steps:
+                        </p>
+                        <ol className="list-decimal list-inside mb-4 text-left">
+                            <li>Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Spotify Developer Dashboard</a></li>
+                            <li>Click on &quot;Create an App&quot;</li>
+                            <li>For App Name, enter &quot;Jive Tracker&quot;</li>
+                            <li>For App Description, enter &quot;Track your Jives!&quot;</li>
+                            <li>For Redirect URIs, enter: <b>{REDIRECT_URI}</b></li>
+                            <li>Select &quot;Web API&quot; scopes for API/SDK scopes</li>
+                            <li>Accept the terms and create the app</li>
+                            <li>Navigate to &quot;Settings&quot;</li>
+                            <li>Copy the Client ID and paste it below</li>
+                        </ol>
+                        <input
+                            type="text"
+                            value={clientId}
+                            onChange={(e) => setClientId(e.target.value)}
+                            className="border p-2 mb-4 w-full"
+                            placeholder="Paste Client ID here"
+                        />
+                        <div className="flex justify-end">
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="mr-2 px-4 py-2 bg-gray-200 rounded"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleModalSubmit}
+                                className="px-4 py-2 bg-[#1DB954] text-white rounded"
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
