@@ -5,7 +5,7 @@ import { kv } from '@vercel/kv'
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
 
 // Jive Spotify track ID
-const JIVE_TRACK_ID = '4ZiO4maXhoFYHXvYOU4UWb'
+const JIVE_TRACK_ID = '2iFxaYqQX6yNusMzEUiaPf'
 
 export async function GET(req: NextRequest) {
   console.log('Received get request')
@@ -38,7 +38,9 @@ export async function POST(req: NextRequest) {
 
     // Fetch recent streams
     const recentStreams = await fetchRecentStreams(spotify_access_token)
-    const streamRecords = recentStreams.items.filter((item: any) => item.track.id === JIVE_TRACK_ID)
+    const streamRecords = recentStreams.items
+      .filter((item: any) => item.track.id === JIVE_TRACK_ID)
+      .map((item: any) => item.played_at);
     const streamCount = streamRecords.length
 
     // Update or insert record in Vercel KV
@@ -73,7 +75,8 @@ async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: str
 
   if (existingCount !== null) {
     const existingStreamRecords = await kv.get(`${spotifyUserId}:stream_records`) as any[] | null || []
-    const updatedStreamRecords = Array.from(new Map([...existingStreamRecords, ...streamRecords].map(item => [JSON.stringify(item), item])).values());
+    const updatedStreamRecords = Array.from(new Set([...existingStreamRecords, ...streamRecords]));
+
     await kv.set(`${spotifyUserId}:stream_records`, updatedStreamRecords)
 
     const updatedCount = updatedStreamRecords.length;
