@@ -4,7 +4,7 @@ import { kv } from '@vercel/kv'
 export async function GET() {
     try {
         // Fetch all user data from KV
-        const users = await kv.hgetall('users') as Record<string, { streams: number }>
+        const users = await kv.hgetall('users') as Record<string, { streams: number, solana_wallet_address: string }>
 
         // Sort users by stream count in descending order
         const sortedUsers = Object.entries(users)
@@ -15,12 +15,13 @@ export async function GET() {
         const leaderboard = sortedUsers.map(([userId, data], index) => ({
             rank: index + 1,
             userId,
-            streamCount: data.streams
+            streamCount: data.streams,
+            solanaWalletAddress: data.solana_wallet_address
         }))
 
         return NextResponse.json({ leaderboard })
     } catch (error) {
-        // console.error('Error fetching leaderboard:', error)
+        console.error('Error fetching leaderboard:', error)
         return NextResponse.json({ message: 'Error fetching leaderboard' }, { status: 500 })
     }
 }
