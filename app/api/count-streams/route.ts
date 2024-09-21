@@ -4,7 +4,8 @@ import { kv } from '@vercel/kv'
 // Spotify API base URL
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
 
-const JIVE_TRACK_ID = '4yIlWru1Xh5cpGypPMNEVy'
+// Jive Spotify track ID
+const JIVE_TRACK_ID = '4ZiO4maXhoFYHXvYOU4UWb'
 
 export async function GET(req: NextRequest) {
   console.log('Received get request')
