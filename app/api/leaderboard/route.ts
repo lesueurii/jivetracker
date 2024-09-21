@@ -22,8 +22,8 @@ export async function GET() {
         // Format the leaderboard data
         const leaderboard = sortedUsers.map((data, index) => ({
             rank: index + 1,
-            spotifyUserId: data.spotifyUserId,
             streamCount: data.streams,
+            solanaWalletAddress: data.solana_wallet_address
         }))
 
         return NextResponse.json({ leaderboard })
