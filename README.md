@@ -14,6 +14,8 @@ In the Spotify Developer Dashboard, set the callback URL to `https://<domain>/ca
 
 Put the API client ID and client secret in the `.env.local` file.
 
+For the other remaining fields, login to Vercel and create a new Vercel KV project and copy paste the `.env.local` from the dashboard.
+
 ## Development
 
 1. Clone the repository
