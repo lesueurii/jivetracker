@@ -29,6 +29,8 @@ const upsertStream = async ({ spotify_access_token, solana_wallet_address }: Ups
 
         const countStreamsData = await response.json();
         console.log('Stream count response:', countStreamsData);
+
+        window.dispatchEvent(new Event('streamCountUpdated'));
     } catch (error: unknown) {
         if (error instanceof Error && error.message === 'Refresh Token') {
             handleTokenExpiration();
