@@ -177,8 +177,8 @@ export default function SpotifyButton() {
                         <ol className="list-decimal list-inside mb-4 text-left">
                             <li>Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Spotify Developer Dashboard</a></li>
                             <li>Click on &quot;Create an App&quot;</li>
-                            <li>For App Name, enter &quot;Jive Tracker&quot;</li>
-                            <li>For App Description, enter &quot;Track your Jives!&quot;</li>
+                            <li>For App Name, enter <b>Jive Tracker</b></li>
+                            <li>For App Description, enter <b>Track your Jives!</b></li>
                             <li>For Redirect URIs, enter: <b>{REDIRECT_URI}</b></li>
                             <li>Select &quot;Web API&quot; scopes for API/SDK scopes</li>
                             <li>Accept the terms and create the app</li>
