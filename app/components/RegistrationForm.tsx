@@ -52,6 +52,17 @@ export default function RegistrationForm() {
                             </div>
                         </div>
                     )}
+                    {publicKey && localStorage.getItem('spotify_access_token') && (
+                        <div>
+                            <h3 className="text-lg font-semibold mb-2">Your Stream Counts</h3>
+                            <p className="text-gray-600 mb-3">Here&apos;s how many times you&apos;ve streamed Jive:</p>
+                            <div className="bg-white p-4 rounded-md shadow">
+                                <p className="text-2xl font-bold text-center">
+                                    34
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>
