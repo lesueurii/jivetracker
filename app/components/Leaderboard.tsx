@@ -54,10 +54,6 @@ export default function Leaderboard() {
         fetchLeaderboard(true)
     }
 
-    const getAbbreviatedAddress = (address: string) => {
-        return `${address.slice(0, 6)}...${address.slice(-4)}`
-    }
-
     return (
         <>
             <div className="flex justify-between items-center mb-4">
@@ -88,7 +84,7 @@ export default function Leaderboard() {
                             leaderboard.map((entry: LeaderboardEntry) => (
                                 <tr key={entry.solanaWalletAddress}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.rank}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getAbbreviatedAddress(entry.solanaWalletAddress)}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.solanaWalletAddress}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.streamCount}</td>
                                 </tr>
                             ))

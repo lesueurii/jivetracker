@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { kv } from '@vercel/kv'
 
+const getAbbreviatedAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`
+}
+
 export async function GET() {
     try {
         if (!kv) {
@@ -23,7 +27,7 @@ export async function GET() {
         const leaderboard = sortedUsers.map((data, index) => ({
             rank: index + 1,
             streamCount: data.streams,
-            solanaWalletAddress: data.solana_wallet_address
+            solanaWalletAddress: getAbbreviatedAddress(data.solana_wallet_address)
         }))
 
         return NextResponse.json({ leaderboard })
