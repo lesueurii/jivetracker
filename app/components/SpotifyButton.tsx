@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
+import upsertStream from '../lib/helpers/upsert-stream';
 
 const CLIENT_ID = '079c06e1f5bf431c8b90e58e9443b217';
 const REDIRECT_URI = `${typeof window !== 'undefined' ? window.location.origin : ''}`;
@@ -13,6 +14,11 @@ export default function SpotifyButton() {
         const token = localStorage.getItem('spotify_access_token');
         if (token) {
             setIsAuthenticated(true);
+
+            upsertStream({
+                spotify_access_token: token,
+                solana_wallet_address: sessionStorage.getItem('publicKey') || '',
+            });
         } else {
             // Check for callback
             const urlParams = new URLSearchParams(window.location.search);

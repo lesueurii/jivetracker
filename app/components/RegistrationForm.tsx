@@ -4,6 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
 import SpotifyButton from "./SpotifyButton";
 import dynamic from 'next/dynamic';
+import StreamCount from "./StreamCount";
 
 const WalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -77,7 +78,7 @@ export default function RegistrationForm() {
                             <p className="text-gray-600 mb-3">Here&apos;s how many times you&apos;ve streamed Jive:</p>
                             <div className="bg-white p-4 rounded-md shadow">
                                 <p className="text-2xl font-bold text-center">
-                                    34
+                                    <StreamCount />
                                 </p>
                             </div>
                         </div>

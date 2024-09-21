@@ -9,6 +9,7 @@ import RegistrationForm from '@/app/components/RegistrationForm'
 import HowItWorks from '@/app/components/HowItWorks'
 
 import JiveLogo from '@/app/components/JiveLogo'
+import Leaderboard from './components/Leaderboard'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,7 +39,7 @@ export default function Home() {
             <h3 className="text-xl font-semibold mb-4">
               Leaderboard
             </h3>
-            {/* <Leaderboard /> */}
+            <Leaderboard />
             <div className="flex flex-col sm:flex-row justify-between items-center">
               <p
                 className="flex items-center my-8 w-full justify-center sm:justify-start text-gray-500"
