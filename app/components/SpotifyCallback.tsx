@@ -43,6 +43,30 @@ export default function SpotifyCallback() {
             const data = await response.json();
             localStorage.setItem('spotify_access_token', data.access_token);
             localStorage.setItem('spotify_refresh_token', data.refresh_token);
+            window.dispatchEvent(new Event('spotifyTokenChanged'));
+
+            // Make an API call to count-streams.ts
+            try {
+                const countStreamsResponse = await fetch('/api/count-streams', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: code }),
+                });
+
+                if (!countStreamsResponse.ok) {
+                    throw new Error('Failed to count streams');
+                }
+
+                const countStreamsData = await countStreamsResponse.json();
+
+                console.log('Stream count response:', countStreamsData);
+            } catch (countError) {
+                console.error('Error counting streams:', countError);
+                // Handle error (e.g., show error message to user)
+            }
+
             router.push('/'); // Redirect to home page after successful authentication
         } catch (error) {
             console.error('Error:', error);
