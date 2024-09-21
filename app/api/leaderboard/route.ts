@@ -24,7 +24,6 @@ export async function GET() {
             rank: index + 1,
             spotifyUserId: data.spotifyUserId,
             streamCount: data.streams,
-            solanaWalletAddress: data.solana_wallet_address
         }))
 
         return NextResponse.json({ leaderboard })
