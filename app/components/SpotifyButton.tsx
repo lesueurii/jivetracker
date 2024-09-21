@@ -137,7 +137,7 @@ export default function SpotifyButton() {
             redirect_uri: REDIRECT_URI,
             code_challenge_method: 'S256',
             code_challenge: codeChallenge,
-            scope: 'user-read-recently-played',
+            scope: 'user-read-recently-played user-read-private',
         });
 
         window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
