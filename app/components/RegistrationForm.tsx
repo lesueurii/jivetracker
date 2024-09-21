@@ -1,7 +1,7 @@
 "use client"
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import SpotifyButton from "./SpotifyButton";
 import dynamic from 'next/dynamic';
 
@@ -12,6 +12,7 @@ const WalletMultiButtonDynamic = dynamic(
 
 export default function RegistrationForm() {
     const { publicKey } = useWallet();
+    const [hasSpotifyToken, setHasSpotifyToken] = useState(false);
 
     useEffect(() => {
         if (publicKey) {
@@ -21,8 +22,26 @@ export default function RegistrationForm() {
             // Remove public key from session storage
             sessionStorage.removeItem('publicKey');
         }
-    }, [publicKey]);
 
+        // Check for Spotify token and update state
+        const checkSpotifyToken = () => {
+            const token = localStorage.getItem('spotify_access_token');
+            setHasSpotifyToken(!!token);
+        };
+
+        // Initial check
+        checkSpotifyToken();
+
+        // Set up event listeners
+        window.addEventListener('storage', checkSpotifyToken);
+        window.addEventListener('spotifyTokenChanged', checkSpotifyToken);
+
+        // Clean up event listeners
+        return () => {
+            window.removeEventListener('storage', checkSpotifyToken);
+            window.removeEventListener('spotifyTokenChanged', checkSpotifyToken);
+        };
+    }, [publicKey]);
 
     const walletStyling = {
         backgroundColor: '#4a5568',
@@ -52,7 +71,7 @@ export default function RegistrationForm() {
                             </div>
                         </div>
                     )}
-                    {publicKey && localStorage.getItem('spotify_access_token') && (
+                    {publicKey && hasSpotifyToken && (
                         <div>
                             <h3 className="text-lg font-semibold mb-2">Your Stream Counts</h3>
                             <p className="text-gray-600 mb-3">Here&apos;s how many times you&apos;ve streamed Jive:</p>

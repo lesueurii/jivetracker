@@ -70,6 +70,7 @@ export default function SpotifyButton() {
             setIsAuthenticated(true);
             // Clear the URL parameters
             window.history.replaceState({}, document.title, window.location.pathname);
+            window.dispatchEvent(new Event('spotifyTokenChanged'));
         } catch (error) {
             console.error('Error:', error);
             // Handle error (e.g., show error message to user)
@@ -83,6 +84,7 @@ export default function SpotifyButton() {
         const codeChallenge = await generateCodeChallenge(codeVerifier);
 
         localStorage.setItem('code_verifier', codeVerifier);
+        window.dispatchEvent(new Event('spotifyTokenChanged'));
 
         const params = new URLSearchParams({
             client_id: CLIENT_ID,
@@ -99,6 +101,7 @@ export default function SpotifyButton() {
     const handleLogout = () => {
         localStorage.removeItem('spotify_access_token');
         setIsAuthenticated(false);
+        window.dispatchEvent(new Event('spotifyTokenChanged'));
     };
 
     if (isLoading) {
