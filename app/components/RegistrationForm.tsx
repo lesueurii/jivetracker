@@ -74,7 +74,13 @@ export default function RegistrationForm() {
                     )}
                     {publicKey && hasSpotifyToken && (
                         <div>
-                            <h3 className="text-lg font-semibold mb-2">Your Stream Counts</h3>
+                            <div className="relative inline-block group">
+                                <h3 className="text-lg font-semibold mb-2">Your Stream Counts</h3>
+                                <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white text-sm rounded py-2 px-4 bottom-full left-1/2 transform -translate-x-1/2 mb-2 whitespace-nowrap">
+                                    Updates every hour
+                                    <svg className="absolute text-gray-800 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0" /></svg>
+                                </div>
+                            </div>
                             <p className="text-gray-600 mb-3">Here&apos;s how many times you&apos;ve streamed Jive:</p>
                             <div className="bg-white p-4 rounded-md shadow">
                                 <p className="text-2xl font-bold text-center">
