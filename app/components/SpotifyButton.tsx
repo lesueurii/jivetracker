@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import upsertStream from '../lib/helpers/upsert-stream';
 
-const REDIRECT_URI = `${typeof window !== 'undefined' ? window.location.origin : ''}`;
+const REDIRECT_URI = `${typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app'}`;
 
 export default function SpotifyButton() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
