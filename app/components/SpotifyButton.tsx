@@ -146,6 +146,7 @@ export default function SpotifyButton() {
     const handleLogout = () => {
         localStorage.removeItem('spotify_access_token');
         localStorage.removeItem('spotify_client_id');
+        localStorage.removeItem('spotify_refresh_token');
         setIsAuthenticated(false);
         setClientId('');
         window.dispatchEvent(new Event('spotifyTokenChanged'));
