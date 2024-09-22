@@ -13,13 +13,14 @@ export default function SpotifyButton() {
 
     useEffect(() => {
         const token = localStorage.getItem('spotify_access_token');
-        if (token) {
+        const publicKey = sessionStorage.getItem('publicKey');
+        if (token && publicKey) {
             setIsAuthenticated(true);
 
             const runUpsertStream = () => {
                 upsertStream({
                     spotify_access_token: token,
-                    solana_wallet_address: sessionStorage.getItem('publicKey') || '',
+                    solana_wallet_address: publicKey,
                 });
             };
 
