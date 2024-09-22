@@ -32,7 +32,7 @@ export default function HowItWorks() {
                         4. Check the leaderboard to see your rank
                     </p>
                     <p className="py-2 text-left max-w-md">
-                        Only the last two hours of your recent 50 Spotify streams are recorded. Make sure to revisit this site every 2 hours to update your stats.
+                        Only the last two hours of your recent Spotify activity is recorded. Make sure to revisit this site every 2 hours to update your stats. It does not update in real-time.
                     </p>
                     <p className="py-2 text-left">
                         <b>

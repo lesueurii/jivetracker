@@ -19,6 +19,10 @@ const upsertStream = async ({ spotify_access_token, solana_wallet_address }: Ups
         });
 
         if (!response.ok) {
+            if (response.status === 401) {
+                handleTokenExpiration();
+                return;
+            }
             const { message } = await response.json();
             if (message === 'Refresh Token') {
                 handleTokenExpiration();
