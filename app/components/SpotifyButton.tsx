@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import upsertStream from '../lib/helpers/upsert-stream';
 
 const REDIRECT_URI = `${typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app'}`;
@@ -10,21 +10,28 @@ export default function SpotifyButton() {
     const [isLoading, setIsLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [clientId, setClientId] = useState(localStorage.getItem('spotify_client_id') || '');
+    const [publicKey, setPublicKey] = useState<string | null>(null);
+
+    const runUpsertStream = useCallback(() => {
+        const token = localStorage.getItem('spotify_access_token');
+        if (token && publicKey) {
+            upsertStream({
+                spotify_access_token: token,
+                solana_wallet_address: publicKey,
+            });
+        }
+    }, [publicKey]);
 
     useEffect(() => {
         const token = localStorage.getItem('spotify_access_token');
-        const publicKey = sessionStorage.getItem('publicKey');
-        if (token && publicKey) {
+        const storedPublicKey = sessionStorage.getItem('publicKey');
+
+        if (storedPublicKey) {
+            setPublicKey(storedPublicKey);
+        }
+
+        if (token && storedPublicKey) {
             setIsAuthenticated(true);
-
-            const runUpsertStream = () => {
-                upsertStream({
-                    spotify_access_token: token,
-                    solana_wallet_address: publicKey,
-                });
-            };
-
-            // Run immediately
             runUpsertStream();
 
             // Set up interval to run every hour
@@ -46,7 +53,7 @@ export default function SpotifyButton() {
         if (storedClientId) {
             setClientId(storedClientId);
         }
-    }, []);
+    }, [runUpsertStream]);
 
     const generateCodeVerifier = (length: number) => {
         let text = '';
@@ -96,6 +103,9 @@ export default function SpotifyButton() {
             // Clear the URL parameters
             window.history.replaceState({}, document.title, window.location.pathname);
             window.dispatchEvent(new Event('spotifyTokenChanged'));
+
+            // Run upsertStream after successful token exchange
+            runUpsertStream();
         } catch (error) {
             console.error('Error:', error);
             // Handle error (e.g., show error message to user)
@@ -152,6 +162,19 @@ export default function SpotifyButton() {
         setClientId('');
         window.dispatchEvent(new Event('spotifyTokenChanged'));
     };
+
+    useEffect(() => {
+        const handlePublicKeyChange = () => {
+            const newPublicKey = sessionStorage.getItem('publicKey');
+            setPublicKey(newPublicKey);
+        };
+
+        window.addEventListener('publicKeyChanged', handlePublicKeyChange);
+
+        return () => {
+            window.removeEventListener('publicKeyChanged', handlePublicKeyChange);
+        };
+    }, []);
 
     if (isLoading) {
         return <div>Processing Spotify authentication...</div>;
