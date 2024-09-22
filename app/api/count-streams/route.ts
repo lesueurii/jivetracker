@@ -63,7 +63,10 @@ async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: str
   const users = await kv.get(usersKey) as Record<string, any> || {}
 
   const existingUser = users[spotifyUserId] || {}
-  const updatedStreamRecords = Array.from(new Set([...existingUser.stream_records || [], ...streamRecords]))
+  const updatedStreamRecords = Array.from(new Set([
+    ...(existingUser.stream_records || []),
+    ...(streamRecords || [])
+  ]))
   const updatedCount = updatedStreamRecords.length
 
   users[spotifyUserId] = {
