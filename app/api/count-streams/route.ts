@@ -29,14 +29,12 @@ export async function POST(req: NextRequest) {
     const { spotify_access_token, solana_wallet_address } = await req.json()
     const { id: spotifyUserId } = await fetchSpotifyUserProfile(spotify_access_token)
 
-    console.log('attempting to fetch recent streams')
     const recentStreams = await fetchRecentStreams(spotify_access_token)
 
     const streamRecords = recentStreams.items
       .filter((item: any) => item.track.id === JIVE_TRACK_ID)
       .map((item: any) => item.played_at)
 
-    console.log('streamRecords', solana_wallet_address, spotify_access_token, streamRecords.length)
 
     await updateStreamCount(spotifyUserId, solana_wallet_address, streamRecords)
     return NextResponse.json({ message: 'Stream count updated successfully' })
