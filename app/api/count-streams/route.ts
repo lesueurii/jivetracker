@@ -27,10 +27,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { spotify_access_token, solana_wallet_address } = await req.json()
-    const { id: spotifyUserId, product } = await fetchSpotifyUserProfile(spotify_access_token)
-    if (product !== 'premium') {
-      return NextResponse.json({ message: 'User is not subscribed to spotify' })
-    }
+    const { id: spotifyUserId } = await fetchSpotifyUserProfile(spotify_access_token)
 
     const recentStreams = await fetchRecentStreams(spotify_access_token)
 
