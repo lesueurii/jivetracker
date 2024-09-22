@@ -25,11 +25,17 @@ For the other remaining fields, login to Vercel and create a new Vercel KV proje
 
 ## Deployment
 
-1. Build the project:
-   ```
-   pnpm build
-   ```
-2. Deploy to Vercel:
-   ```
-   pnpm deploy
-   ```
+1. Connect your GitHub repository to Vercel:
+   - Go to [Vercel](https://vercel.com) and sign in
+   - Click "Add New Project"
+   - Select your GitHub repository
+
+2. Configure your project:
+   - Choose the appropriate framework preset (Next.js)
+   - Set the root directory if needed
+   - Add your environment variables from `.env.local`
+
+3. Deploy:
+   - Click "Deploy"
+
+Vercel will automatically build and deploy your project. For future updates, simply push to your main branch, and Vercel will automatically redeploy.
