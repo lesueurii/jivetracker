@@ -57,9 +57,15 @@ export default function Leaderboard() {
     return (
         <>
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">
-                    Leaderboard
-                </h3>
+                <div className="relative inline-block group">
+                    <h3 className="text-xl font-semibold cursor-help">
+                        Leaderboard
+                    </h3>
+                    <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white text-sm rounded py-2 px-4 bottom-full left-1/2 transform -translate-x-1/2 mb-2 whitespace-nowrap">
+                        Showing top 25 entries
+                        <svg className="absolute text-gray-800 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0" /></svg>
+                    </div>
+                </div>
                 <button
                     onClick={handleRefreshClick}
                     disabled={isLoading}
