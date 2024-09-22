@@ -44,10 +44,37 @@ const upsertStream = async ({ spotify_access_token, solana_wallet_address }: Ups
     }
 };
 
-const handleTokenExpiration = () => {
+const handleTokenExpiration = async () => {
+    const refreshToken = localStorage.getItem('spotify_refresh_token');
+    if (refreshToken) {
+        try {
+            const response = await fetch('/api/refresh-spotify-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh_token: refreshToken }),
+            });
+
+            if (response.ok) {
+                const { access_token } = await response.json();
+                localStorage.setItem('spotify_access_token', access_token);
+                window.dispatchEvent(new Event('spotifyTokenChanged'));
+                return;
+            }
+        } catch (error) {
+            console.error('Error refreshing Spotify token:', error);
+        }
+    }
+
+    // If refresh fails or no refresh token, proceed with logout
     localStorage.removeItem('spotify_access_token');
+    localStorage.removeItem('spotify_refresh_token');
     window.dispatchEvent(new Event('spotifyTokenChanged'));
-    Toast({ message: 'Spotify session expired. Please reconnect your Spotify account.', type: 'error' });
+    window.dispatchEvent(new CustomEvent('showToast', {
+        detail: {
+            message: 'Spotify session expired. Please reconnect your Spotify account.',
+            type: 'error'
+        }
+    }));
 };
 
 export default upsertStream;

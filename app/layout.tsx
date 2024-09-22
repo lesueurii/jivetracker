@@ -2,6 +2,7 @@ import './globals.css'
 import { Inter } from 'next/font/google'
 
 import AppWalletProvider from "@/app/components/AppWalletProvider";
+import ToastHandler from './components/ToastHandler';
 
 export const metadata = {
   title: 'Jive Tracker',
@@ -25,6 +26,7 @@ export default function RootLayout({
         <AppWalletProvider>
           {children}
         </AppWalletProvider>
+        <ToastHandler />
       </body>
     </html>
   )
