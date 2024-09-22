@@ -2,15 +2,42 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import upsertStream from '../lib/helpers/upsert-stream';
+import Tooltip from './Tooltip';
 
-const REDIRECT_URI = `${typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app'}`;
+// Move this outside the component to avoid re-creation on each render
+const REDIRECT_URI = typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app';
+
+
+// Define a single app description
+const appDescriptions = [
+    "Jive electrifies the dance floor with its infectious rhythm and soulful vibes!",
+    "Experience the magic of Jive as it brings people together through music and dance!",
+    "Jive: Where melody meets movement in a spectacular fusion of sound and style!",
+    "Let Jive transport you to a world of pulsating beats and irresistible grooves!",
+    "Discover the joy of Jive, where every track is a journey and every beat is an adventure!",
+    "Jive: Unleashing the power of music to move your body and uplift your soul!",
+    "Step into the rhythm of life with Jive, where every song tells a story!",
+    "Jive: Transforming ordinary moments into extraordinary memories through music!",
+    "Feel the pulse of Jive as it synchronizes hearts and feet on the dance floor!",
+    "Jive: Your passport to a universe of captivating melodies and irresistible rhythms!"
+];
+const appDescription = appDescriptions[Math.floor(Math.random() * appDescriptions.length)];
+
 
 export default function SpotifyButton() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    // Use lazy initialization for state that requires computation
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return !!(localStorage.getItem('spotify_access_token') && sessionStorage.getItem('publicKey'));
+    });
     const [isLoading, setIsLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const [clientId, setClientId] = useState(localStorage.getItem('spotify_client_id') || '');
+    const [clientId, setClientId] = useState(() => {
+        if (typeof window === 'undefined') return '';
+        return localStorage.getItem('spotify_client_id') || '';
+    });
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [copiedText, setCopiedText] = useState('');
 
     const runUpsertStream = useCallback(() => {
         const token = localStorage.getItem('spotify_access_token');
@@ -61,25 +88,25 @@ export default function SpotifyButton() {
         }
     }, [runUpsertStream]);
 
-    const generateCodeVerifier = (length: number) => {
+    const generateCodeVerifier = useCallback((length: number) => {
         let text = '';
         const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         for (let i = 0; i < length; i++) {
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         }
         return text;
-    };
+    }, []);
 
-    const generateCodeChallenge = async (codeVerifier: string) => {
+    const generateCodeChallenge = useCallback(async (codeVerifier: string) => {
         const data = new TextEncoder().encode(codeVerifier);
         const digest = await window.crypto.subtle.digest('SHA-256', data);
         return btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(digest))))
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=+$/, '');
-    };
+    }, []);
 
-    const exchangeCodeForToken = async (code: string) => {
+    const exchangeCodeForToken = useCallback(async (code: string) => {
         setIsLoading(true);
         const codeVerifier = localStorage.getItem('code_verifier');
 
@@ -118,9 +145,9 @@ export default function SpotifyButton() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [clientId, runUpsertStream]);
 
-    const handleLogin = async () => {
+    const handleLogin = useCallback(() => {
         const storedClientId = localStorage.getItem('spotify_client_id');
         if (storedClientId) {
             setClientId(storedClientId);
@@ -128,9 +155,9 @@ export default function SpotifyButton() {
         } else {
             setShowModal(true);
         }
-    };
+    }, []);
 
-    const handleModalSubmit = () => {
+    const handleModalSubmit = useCallback(() => {
         if (!clientId) {
             alert('Please enter a valid Client ID');
             return;
@@ -139,9 +166,9 @@ export default function SpotifyButton() {
         localStorage.setItem('spotify_client_id', clientId);
         setShowModal(false);
         startAuthProcess();
-    };
+    }, [clientId]);
 
-    const startAuthProcess = async () => {
+    const startAuthProcess = useCallback(async () => {
         const codeVerifier = generateCodeVerifier(128);
         const codeChallenge = await generateCodeChallenge(codeVerifier);
 
@@ -158,9 +185,9 @@ export default function SpotifyButton() {
         });
 
         window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
-    };
+    }, [clientId, generateCodeVerifier, generateCodeChallenge]);
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         localStorage.removeItem('spotify_access_token');
         localStorage.removeItem('spotify_client_id');
         localStorage.removeItem('spotify_refresh_token');
@@ -173,7 +200,17 @@ export default function SpotifyButton() {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
-    };
+    }, []);
+
+    const copyToClipboard = useCallback((text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopiedText(text);
+            // Reset the copiedText after 2 seconds
+            setTimeout(() => setCopiedText(''), 2000);
+        }).catch((err) => {
+            console.error('Failed to copy: ', err);
+        });
+    }, []);
 
     if (isLoading) {
         return <div>Processing Spotify authentication...</div>;
@@ -201,9 +238,24 @@ export default function SpotifyButton() {
                         <ol className="list-decimal list-inside mb-4 text-left">
                             <li>Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Spotify Developer Dashboard</a></li>
                             <li>Click on &quot;Create an App&quot;</li>
-                            <li>For App Name, enter <b>Jive Tracker</b></li>
-                            <li>For App Description, enter <b>Track your Jives!</b></li>
-                            <li>For Redirect URIs, enter: <b>{REDIRECT_URI}</b></li>
+                            <li>For App Name, enter <Tooltip text={copiedText === `${sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker` ? 'Copied!' : 'Click to copy'}>
+                                <button onClick={() => copyToClipboard(`${sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker`)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
+                                    {sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker
+                                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                </button>
+                            </Tooltip></li>
+                            <li>For App Description, enter <Tooltip text={copiedText === appDescription ? 'Copied!' : 'Click to copy'}>
+                                <button onClick={() => copyToClipboard(appDescription)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
+                                    {appDescription}
+                                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                </button>
+                            </Tooltip></li>
+                            <li>For Redirect URIs, enter: <Tooltip text={copiedText === REDIRECT_URI ? 'Copied!' : 'Click to copy'}>
+                                <button onClick={() => copyToClipboard(REDIRECT_URI)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
+                                    {REDIRECT_URI}
+                                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                </button>
+                            </Tooltip></li>
                             <li>Select &quot;Web API&quot; scopes for API/SDK scopes</li>
                             <li>Accept the terms and create the app</li>
                             <li>Navigate to &quot;Settings&quot;</li>
