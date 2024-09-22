@@ -6,11 +6,6 @@ interface UpsertStreamParams {
 }
 
 const upsertStream = async ({ spotify_access_token, solana_wallet_address }: UpsertStreamParams) => {
-    if (!spotify_access_token || !solana_wallet_address) {
-        console.error('Spotify access token and Solana wallet address are required');
-        return;
-    }
-
     try {
         const response = await fetch('/api/count-streams', {
             method: 'POST',
