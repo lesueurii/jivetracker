@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import upsertStream from '../lib/helpers/upsert-stream';
 
 const REDIRECT_URI = `${typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app'}`;
@@ -10,35 +10,41 @@ export default function SpotifyButton() {
     const [isLoading, setIsLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [clientId, setClientId] = useState(localStorage.getItem('spotify_client_id') || '');
-    const [publicKey, setPublicKey] = useState<string | null>(null);
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const runUpsertStream = useCallback(() => {
         const token = localStorage.getItem('spotify_access_token');
+        const publicKey = sessionStorage.getItem('publicKey');
         if (token && publicKey) {
+            console.log('Running upsertStream');
             upsertStream({
                 spotify_access_token: token,
                 solana_wallet_address: publicKey,
             });
+        } else {
+            console.log('Missing token or publicKey for upsertStream');
         }
-    }, [publicKey]);
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('spotify_access_token');
-        const storedPublicKey = sessionStorage.getItem('publicKey');
+        const publicKey = sessionStorage.getItem('publicKey');
 
-        if (storedPublicKey) {
-            setPublicKey(storedPublicKey);
-        }
-
-        if (token && storedPublicKey) {
+        if (token && publicKey) {
             setIsAuthenticated(true);
+
+            // Run immediately
             runUpsertStream();
 
             // Set up interval to run every hour
-            const intervalId = setInterval(runUpsertStream, 60 * 60 * 1000);
+            intervalRef.current = setInterval(runUpsertStream, 60 * 60 * 1000);
 
             // Clean up interval on component unmount
-            return () => clearInterval(intervalId);
+            return () => {
+                if (intervalRef.current) {
+                    clearInterval(intervalRef.current);
+                }
+            };
         } else {
             // Check for callback
             const urlParams = new URLSearchParams(window.location.search);
@@ -161,20 +167,13 @@ export default function SpotifyButton() {
         setIsAuthenticated(false);
         setClientId('');
         window.dispatchEvent(new Event('spotifyTokenChanged'));
+
+        // Clear the interval when logging out
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
     };
-
-    useEffect(() => {
-        const handlePublicKeyChange = () => {
-            const newPublicKey = sessionStorage.getItem('publicKey');
-            setPublicKey(newPublicKey);
-        };
-
-        window.addEventListener('publicKeyChanged', handlePublicKeyChange);
-
-        return () => {
-            window.removeEventListener('publicKeyChanged', handlePublicKeyChange);
-        };
-    }, []);
 
     if (isLoading) {
         return <div>Processing Spotify authentication...</div>;
