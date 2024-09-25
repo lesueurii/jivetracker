@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { spotify_access_token, solana_wallet_address } = await req.json()
+    const { spotify_access_token, solana_wallet_address, referralCode } = await req.json()
     const { id: spotifyUserId } = await fetchSpotifyUserProfile(spotify_access_token)
 
     const recentStreams = await fetchRecentStreams(spotify_access_token)
@@ -35,8 +35,7 @@ export async function POST(req: NextRequest) {
       .filter((item: any) => item.track.id === JIVE_TRACK_ID)
       .map((item: any) => item.played_at)
 
-
-    await updateStreamCount(spotifyUserId, solana_wallet_address, streamRecords)
+    await updateStreamCount(spotifyUserId, solana_wallet_address, streamRecords, referralCode)
     return NextResponse.json({ message: 'Stream count updated successfully' })
   } catch (error) {
     return handleError(error)
@@ -59,7 +58,7 @@ async function fetchRecentStreams(accessToken: string) {
   return response.json()
 }
 
-async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamRecords: string[]) {
+async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamRecords: string[], referralCode: string | null) {
   const usersKey = 'users'
   const users = await kv.get(usersKey) as Record<string, any> || {}
 
@@ -69,12 +68,24 @@ async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: str
     ...(streamRecords || [])
   ]))
   const updatedCount = updatedStreamRecords.length
+  const bonusStreams = existingUser.bonus_streams || 0
 
   users[spotifyUserId] = {
     ...existingUser,
     solana_wallet_address: solanaWalletAddress,
     streams: updatedCount,
-    stream_records: updatedStreamRecords
+    stream_records: updatedStreamRecords,
+    bonus_streams: bonusStreams,
+    referral_code: existingUser.referral_code || (updatedCount > 500 ? spotifyUserId : null)
+  }
+
+  if (referralCode && referralCode !== spotifyUserId) {
+    const referrer = users[referralCode]
+    if (referrer) {
+      const newStreams = streamRecords.length
+      referrer.bonus_streams = (referrer.bonus_streams || 0) + Math.floor(newStreams * 0.25)
+      users[referralCode] = referrer
+    }
   }
 
   await kv.set(usersKey, users)

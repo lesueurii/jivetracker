@@ -5,10 +5,19 @@ import HowItWorks from '@/app/components/HowItWorks'
 
 import JiveLogo from '@/app/components/JiveLogo'
 import Leaderboard from './components/Leaderboard'
+import { useEffect } from 'react'
 
 export const dynamic = 'force-dynamic'
 
 export default function Home() {
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ref = urlParams.get('ref');
+    if (ref) {
+      localStorage.setItem('referralCode', ref);
+    }
+  }, []);
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center">
       <main className="flex flex-col items-center justify-center flex-1 px-4 sm:px-20 text-center">

@@ -7,10 +7,11 @@ interface UpsertStreamParams {
 
 const upsertStream = async ({ spotify_access_token, solana_wallet_address }: UpsertStreamParams) => {
     try {
+        const referralCode = localStorage.getItem('referralCode');
         const response = await fetch('/api/count-streams', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ spotify_access_token, solana_wallet_address }),
+            body: JSON.stringify({ spotify_access_token, solana_wallet_address, referralCode }),
         });
 
         if (!response.ok) {
