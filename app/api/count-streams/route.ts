@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { updateStreamCount, getUserBySpotifyId } from '@/app/utils/db'
 
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
+const JIVE_TRACK_ID = '2iFxaYqQX6yNusMzEUiaPf'
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
     const recentStreams = await fetchRecentStreams(spotifyAccessToken)
 
     const streamRecords = recentStreams.items
-      .filter((item: any) => item.track.album.id === '4ZiO4maXhoFYHXvYOU4UWb')
+      .filter((item: any) => item.track.id === JIVE_TRACK_ID)
       .map((item: any) => item.played_at)
 
     const user = await getUserBySpotifyId(spotifyUser.id)
