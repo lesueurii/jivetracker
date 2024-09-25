@@ -11,47 +11,32 @@ const WalletMultiButtonDynamic = dynamic(
     { ssr: false }
 );
 
+const walletStyling = {
+    backgroundColor: '#4a5568',
+    color: 'white',
+    padding: '10px 20px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s ease',
+}
+
 export default function RegistrationForm() {
     const { publicKey } = useWallet();
     const [hasSpotifyToken, setHasSpotifyToken] = useState(false);
 
     useEffect(() => {
-        if (publicKey) {
-            // Save public key to session storage
-            sessionStorage.setItem('publicKey', publicKey.toString());
-        } else {
-            // Remove public key from session storage
-            sessionStorage.removeItem('publicKey');
-        }
-
-        // Check for Spotify token and update state
         const checkSpotifyToken = () => {
             const token = localStorage.getItem('spotify_access_token');
             setHasSpotifyToken(!!token);
         };
 
-        // Initial check
         checkSpotifyToken();
-
-        // Set up event listeners
-        window.addEventListener('storage', checkSpotifyToken);
         window.addEventListener('spotifyTokenChanged', checkSpotifyToken);
 
-        // Clean up event listeners
         return () => {
-            window.removeEventListener('storage', checkSpotifyToken);
             window.removeEventListener('spotifyTokenChanged', checkSpotifyToken);
         };
-    }, [publicKey]);
-
-    const walletStyling = {
-        backgroundColor: '#4a5568',
-        color: 'white',
-        padding: '10px 20px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'background-color 0.3s ease',
-    }
+    }, []);
 
     return (
         <>

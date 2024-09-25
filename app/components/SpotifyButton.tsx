@@ -1,14 +1,12 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import upsertStream from '../lib/helpers/upsert-stream';
+import upsertStream from '../utils/upsert-stream';
 import Tooltip from './Tooltip';
+import { generateCodeVerifier, generateCodeChallenge } from '../utils/common';
 
-// Move this outside the component to avoid re-creation on each render
 const REDIRECT_URI = typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app';
 
-
-// Define a single app description
 const appDescriptions = [
     "Jive electrifies the dance floor with its infectious rhythm and soulful vibes!",
     "Experience the magic of Jive as it brings people together through music and dance!",
@@ -23,9 +21,7 @@ const appDescriptions = [
 ];
 const appDescription = appDescriptions[Math.floor(Math.random() * appDescriptions.length)];
 
-
 export default function SpotifyButton() {
-    // Use lazy initialization for state that requires computation
     const [isAuthenticated, setIsAuthenticated] = useState(() => {
         if (typeof window === 'undefined') return false;
         return !!(localStorage.getItem('spotify_access_token') && sessionStorage.getItem('publicKey'));
@@ -88,24 +84,6 @@ export default function SpotifyButton() {
             setClientId(storedClientId);
         }
     }, [runUpsertStream]);
-
-    const generateCodeVerifier = useCallback((length: number) => {
-        let text = '';
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (let i = 0; i < length; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-        }
-        return text;
-    }, []);
-
-    const generateCodeChallenge = useCallback(async (codeVerifier: string) => {
-        const data = new TextEncoder().encode(codeVerifier);
-        const digest = await window.crypto.subtle.digest('SHA-256', data);
-        return btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(digest))))
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=+$/, '');
-    }, []);
 
     const exchangeCodeForToken = useCallback(async (code: string) => {
         setIsLoading(true);

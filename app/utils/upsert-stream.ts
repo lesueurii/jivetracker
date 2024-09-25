@@ -1,4 +1,4 @@
-import Toast from '../../components/Toast';
+import Toast from '../components/Toast';
 
 interface UpsertStreamParams {
     spotify_access_token: string;

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Toast from './Toast'
+import { getAbbreviatedAddress } from '../utils/common'
 
 interface LeaderboardEntry {
     rank: number;
@@ -14,11 +15,10 @@ export default function Leaderboard() {
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
-    const [isInitialLoad, setIsInitialLoad] = useState(true)
     const [limit, setLimit] = useState<number>(25)
     const [dateRange, setDateRange] = useState<string>('all')
 
-    const fetchLeaderboard = (isButtonClick: boolean = false) => {
+    const fetchLeaderboard = useCallback((isButtonClick: boolean = false) => {
         setIsLoading(true)
         fetch(`/api/leaderboard?limit=${limit}&dateRange=${dateRange}`)
             .then(response => response.json())
@@ -44,13 +44,12 @@ export default function Leaderboard() {
             })
             .finally(() => {
                 setIsLoading(false)
-                setIsInitialLoad(false)
-            });
-    }
+            })
+    }, [limit, dateRange])
 
     useEffect(() => {
         fetchLeaderboard()
-    }, [limit, dateRange]);
+    }, [fetchLeaderboard])
 
     const handleRefreshClick = () => {
         fetchLeaderboard(true)
@@ -113,7 +112,7 @@ export default function Leaderboard() {
                             leaderboard.map((entry: LeaderboardEntry) => (
                                 <tr key={entry.solanaWalletAddress}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.rank}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.solanaWalletAddress}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getAbbreviatedAddress(entry.solanaWalletAddress)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.streamCount}</td>
                                 </tr>
                             ))
@@ -126,7 +125,7 @@ export default function Leaderboard() {
                 </table>
             </div>
 
-            {!isInitialLoad && toast && (
+            {toast && (
                 <Toast
                     message={toast.message}
                     type={toast.type}
