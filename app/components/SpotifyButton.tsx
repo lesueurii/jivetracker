@@ -21,6 +21,10 @@ const appDescriptions = [
 ];
 const appDescription = appDescriptions[Math.floor(Math.random() * appDescriptions.length)];
 
+const truncateDescription = (desc: string, maxLength: number) => {
+    return desc.length > maxLength ? desc.substring(0, maxLength - 3) + '...' : desc;
+};
+
 export default function SpotifyButton() {
     const [isAuthenticated, setIsAuthenticated] = useState(() => {
         if (typeof window === 'undefined') return false;
@@ -225,6 +229,8 @@ export default function SpotifyButton() {
         }
     }, []);
 
+    const truncatedDescription = truncateDescription(appDescription, 50);
+
     if (isLoading) {
         return <div>Processing Spotify authentication...</div>;
     }
@@ -258,9 +264,14 @@ export default function SpotifyButton() {
                                 </button>
                             </Tooltip></li>
                             <li>For App Description, enter <Tooltip text={copiedText === appDescription ? 'Copied!' : 'Click to copy'}>
-                                <button onClick={() => copyToClipboard(appDescription)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
-                                    {appDescription}
-                                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                <button
+                                    onClick={() => copyToClipboard(appDescription)}
+                                    className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center"
+                                >
+                                    {truncatedDescription}
+                                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
                                 </button>
                             </Tooltip></li>
                             <li>For Redirect URIs, enter: <Tooltip text={copiedText === REDIRECT_URI ? 'Copied!' : 'Click to copy'}>
