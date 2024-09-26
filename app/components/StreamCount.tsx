@@ -39,7 +39,7 @@ export default function StreamCount() {
         };
     }, [])
 
-    const totalStreams = streamCount + bonusStreams
+    const totalStreams = streamCount + bonusStreams || 0
     const tooltipText = `Referral Streams: ${bonusStreams}`
 
     const formattedLastUpdated = lastUpdated
@@ -47,14 +47,16 @@ export default function StreamCount() {
         : 'Not updated yet';
 
     return (
-        <div>
-            <Tooltip text={tooltipText}>
-                <span className="text-2xl font-bold">{totalStreams}</span>
-            </Tooltip>
-            <p className="text-xs text-gray-400 mt-1">{formattedLastUpdated}</p>
-            <p className="text-xs text-gray-400 mt-1">
+        <div className="bg-white p-4 rounded-md shadow">
+            <div className="text-2xl font-bold text-center">
+                <Tooltip text={tooltipText}>
+                    <span className="text-2xl font-bold">{totalStreams}</span>
+                </Tooltip>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">{formattedLastUpdated}</div>
+            <div className="text-xs text-gray-400 mt-1">
                 Stream count refreshes automatically every hour
-            </p>
+            </div>
         </div>
     )
 }

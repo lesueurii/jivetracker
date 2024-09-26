@@ -67,11 +67,7 @@ export default function RegistrationForm() {
                                 </div>
                             </div>
                             <p className="text-gray-600 mb-3">Here&apos;s how many times you&apos;ve streamed Jive:</p>
-                            <div className="bg-white p-4 rounded-md shadow">
-                                <p className="text-2xl font-bold text-center">
-                                    <StreamCount />
-                                </p>
-                            </div>
+                            <StreamCount />
                         </div>
                     )}
                 </div>

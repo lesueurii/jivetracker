@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
         const formattedLeaderboard = leaderboard.map(entry => ({
             ...entry,
-            solanaWalletAddress: getAbbreviatedAddress(entry.solanaWalletAddress)
+            solanaWalletAddress: entry.solanaWalletAddress
         }))
 
         return NextResponse.json({ leaderboard: formattedLeaderboard })

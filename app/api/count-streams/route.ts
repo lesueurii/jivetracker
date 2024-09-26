@@ -1,10 +1,33 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { kv } from '@vercel/kv'
 import { updateStreamCount, getUserBySpotifyId } from '@/app/utils/db'
 
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
 const JIVE_TRACK_ID = '2iFxaYqQX6yNusMzEUiaPf'
 
-export async function GET(request: Request) {
+export async function GET(req: NextRequest) {
+  try {
+    const spotify_access_token = req.nextUrl.searchParams.get('spotify_access_token')
+    if (!spotify_access_token) {
+      return NextResponse.json({ message: 'Missing spotify_access_token' }, { status: 400 })
+    }
+
+    const spotifyUser = await fetchSpotifyUserProfile(spotify_access_token)
+    if (!spotifyUser || !spotifyUser.id) {
+      return NextResponse.json({ message: 'Failed to fetch Spotify user profile' }, { status: 500 })
+    }
+
+    const user = await kv.hget('users', spotifyUser.id) as { streams?: number } | null
+    const streamCount = user?.streams ?? 0
+
+    return NextResponse.json({ streamCount })
+  } catch (error) {
+    console.error('Error in GET count-streams:', error)
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const spotifyAccessToken = searchParams.get('spotify_access_token')
