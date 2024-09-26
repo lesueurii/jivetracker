@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Toast from './Toast'
 import { getAbbreviatedAddress } from '../utils/common'
 import Tooltip from './Tooltip'
@@ -18,6 +18,17 @@ export default function Leaderboard() {
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
     const [limit, setLimit] = useState<number>(10)
     const [dateRange, setDateRange] = useState<string>('all')
+    const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
+        if (toastTimeoutRef.current) {
+            clearTimeout(toastTimeoutRef.current)
+        }
+        setToast({ message, type })
+        toastTimeoutRef.current = setTimeout(() => {
+            setToast(null)
+        }, 3000)
+    }, [])
 
     const fetchLeaderboard = useCallback((isButtonClick: boolean = false) => {
         setIsLoading(true)
@@ -27,12 +38,12 @@ export default function Leaderboard() {
                 if (data && data.leaderboard && Array.isArray(data.leaderboard)) {
                     setLeaderboard(data.leaderboard);
                     if (isButtonClick) {
-                        setToast({ message: 'Leaderboard refreshed successfully', type: 'success' });
+                        showToast('Leaderboard refreshed successfully', 'success');
                     }
                 } else {
                     setLeaderboard([]);
                     if (isButtonClick) {
-                        setToast({ message: 'No leaderboard data available', type: 'info' });
+                        showToast('No leaderboard data available', 'info');
                     }
                 }
             })
@@ -40,13 +51,13 @@ export default function Leaderboard() {
                 console.error('Error fetching leaderboard:', error);
                 setLeaderboard([]);
                 if (isButtonClick) {
-                    setToast({ message: 'Failed to refresh leaderboard', type: 'error' });
+                    showToast('Failed to refresh leaderboard', 'error');
                 }
             })
             .finally(() => {
                 setIsLoading(false)
             })
-    }, [limit, dateRange])
+    }, [limit, dateRange, showToast])
 
     useEffect(() => {
         fetchLeaderboard()
@@ -58,9 +69,14 @@ export default function Leaderboard() {
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text).then(() => {
-            setToast({ message: 'Address copied to clipboard', type: 'success' });
+            showToast('Address copied to clipboard', 'success');
         }).catch(() => {
-            setToast({ message: 'Failed to copy address', type: 'error' });
+            showToast('Failed to copy address', 'error');
+        }).finally(() => {
+            // Reset toast state after a short delay
+            setTimeout(() => {
+                setToast(null);
+            }, 3100); // Slightly longer than the toast duration
         });
     };
 
@@ -176,6 +192,7 @@ export default function Leaderboard() {
                     message={toast.message}
                     type={toast.type}
                     duration={3000}
+                    onClose={() => setToast(null)}
                 />
             )}
         </>
