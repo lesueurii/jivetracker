@@ -27,7 +27,6 @@ const truncateDescription = (desc: string, maxLength: number) => {
 
 export default function SpotifyButton() {
     const [isAuthenticated, setIsAuthenticated] = useState(() => {
-        if (typeof window === 'undefined') return false;
         return !!(localStorage.getItem('spotify_access_token') && sessionStorage.getItem('publicKey'));
     });
     const [isLoading, setIsLoading] = useState(false);
