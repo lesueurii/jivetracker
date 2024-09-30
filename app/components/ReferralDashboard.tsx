@@ -1,31 +1,19 @@
 import { useState, useCallback, useEffect } from 'react';
 import { copyToClipboard } from '../utils/common';
+import { fetchSpotifyUserId } from '../utils/spotify';
 
 export default function ReferralDashboard() {
     const [isLoading, setIsLoading] = useState(false);
-    const [isButtonDisabled, setIsButtonDisabled] = useState(false);
     const [spotifyUserId, setSpotifyUserId] = useState<string | null>(null);
     const [bonusStreams, setBonusStreams] = useState(0);
     const [generatedStreams, setGeneratedStreams] = useState(0);
 
-    useEffect(() => {
-        fetchSpotifyUserId();
-        fetchReferralStats();
-    }, []);
-
-    const fetchSpotifyUserId = async () => {
+    const getSpotifyUserId = async () => {
         const token = localStorage.getItem('spotify_access_token');
         if (token) {
             try {
-                const response = await fetch('https://api.spotify.com/v1/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const { id } = await response.json();
-                    setSpotifyUserId(id);
-                } else {
-                    throw new Error('Failed to fetch Spotify user profile');
-                }
+                const id = await fetchSpotifyUserId(token);
+                setSpotifyUserId(id);
             } catch (error) {
                 console.error('Error fetching Spotify user ID:', error);
                 window.dispatchEvent(new CustomEvent('showToast', {
@@ -37,6 +25,11 @@ export default function ReferralDashboard() {
             }
         }
     };
+
+    useEffect(() => {
+        getSpotifyUserId();
+        fetchReferralStats();
+    }, []);
 
     const fetchReferralStats = async () => {
         // This is a placeholder. You'll need to implement an API endpoint to fetch these stats.
@@ -55,10 +48,9 @@ export default function ReferralDashboard() {
 
     const handleCopyReferralLink = async () => {
         setIsLoading(true);
-        setIsButtonDisabled(true);
         const referralLink = generateReferralLink();
         if (referralLink) {
-            await copyToClipboard(referralLink);
+            copyToClipboard(referralLink);
             window.dispatchEvent(new CustomEvent('showToast', {
                 detail: {
                     message: 'Referral link copied to clipboard!',
@@ -74,42 +66,44 @@ export default function ReferralDashboard() {
             }));
         }
         setIsLoading(false);
-        setTimeout(() => setIsButtonDisabled(false), 3000); // Disable for 3 seconds
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm p-6 max-w-2xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Referral Dashboard</h2>
             <div className="flex justify-center mb-8">
                 <button
                     onClick={handleCopyReferralLink}
-                    disabled={isLoading || isButtonDisabled}
-                    className="text-blue-600 hover:text-blue-800 font-medium py-1 px-3 text-sm rounded-md border border-blue-300 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out flex items-center"
+                    disabled={isLoading}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out flex items-center space-x-2"
                 >
                     {isLoading ? (
-                        <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
                             <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                         </svg>
                     )}
-                    {isLoading ? 'Copying...' : 'Copy Referral Link'}
+                    <span>{isLoading ? 'Copying...' : 'Copy Referral Link'}</span>
                 </button>
             </div>
-            <div className="grid grid-cols-2 gap-6">
-                <div className="text-center">
-                    <p className="text-4xl font-bold text-green-600 mb-2">{generatedStreams}</p>
-                    <p className="text-sm text-gray-600">Referral Streams</p>
+            <div className="grid grid-cols-2 gap-8 mb-8">
+                <div className="bg-gray-50 rounded-lg p-6 text-center">
+                    <p className="text-5xl font-bold text-green-600 mb-2">{generatedStreams}</p>
+                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Referral Streams</p>
                 </div>
-                <div className="text-center">
-                    <p className="text-4xl font-bold text-blue-600 mb-2">{bonusStreams}</p>
-                    <p className="text-sm text-gray-600">Your Bonus Streams</p>
+                <div className="bg-gray-50 rounded-lg p-6 text-center">
+                    <p className="text-5xl font-bold text-blue-600 mb-2">{bonusStreams}</p>
+                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Your Bonus Streams</p>
                 </div>
             </div>
-            <p className="text-sm text-gray-500 mt-8 text-center">When someone starts streaming & competing using your referral link, you will receive one bonus stream for every four streams they generate.</p>
+            <p className="text-sm text-gray-600 mt-8 text-center bg-blue-50 border border-blue-100 rounded-lg p-4">
+                When someone starts tracking their streams using your referral link, you will receive one bonus stream for every four streams they generate.
+            </p>
         </div>
     );
 }
