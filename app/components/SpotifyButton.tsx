@@ -49,34 +49,42 @@ export default function SpotifyButton() {
                 solana_wallet_address: publicKey,
             });
         } else {
-            console.log('Missing token or publicKey for upsertStream');
+            console.error('Missing token or publicKey for upsertStream');
         }
     }, []);
 
     useEffect(() => {
+        console.log('SpotifyButton useEffect running');
         const token = localStorage.getItem('spotify_access_token');
         const publicKey = sessionStorage.getItem('publicKey');
 
         if (token && publicKey) {
+            console.log('Token and publicKey found, setting up upsertStream');
             setIsAuthenticated(true);
 
             // Run immediately
             runUpsertStream();
 
             // Set up interval to run every hour
-            intervalRef.current = setInterval(runUpsertStream, 60 * 60 * 1000);
+            intervalRef.current = setInterval(() => {
+                console.log('Interval triggered, running upsertStream');
+                runUpsertStream();
+            }, 60 * 60 * 1000);
 
             // Clean up interval on component unmount
             return () => {
+                console.log('Cleaning up interval');
                 if (intervalRef.current) {
                     clearInterval(intervalRef.current);
                 }
             };
         } else {
+            console.log('No token or publicKey found');
             // Check for callback
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             if (code) {
+                console.log('Code found in URL, exchanging for token');
                 exchangeCodeForToken(code);
             }
         }
@@ -119,10 +127,10 @@ export default function SpotifyButton() {
             window.history.replaceState({}, document.title, window.location.pathname);
             window.dispatchEvent(new Event('spotifyTokenChanged'));
 
-            // Run upsertStream after successful token exchange
+            console.log('Token exchange successful, running upsertStream');
             runUpsertStream();
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error exchanging code for token:', error);
             // Handle error (e.g., show error message to user)
         } finally {
             setIsLoading(false);
@@ -307,14 +315,6 @@ export default function SpotifyButton() {
                         </div>
                     </div>
                 </div>
-            )}
-            {isAuthenticated && streamCount > 500 && (
-                <button
-                    onClick={generateReferralLink}
-                    className="mt-4 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                >
-                    Generate Referral Link
-                </button>
             )}
         </div>
     );

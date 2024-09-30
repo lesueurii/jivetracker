@@ -31,7 +31,7 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
         streams: updatedCount,
         stream_records: updatedStreamRecords,
         bonus_streams: bonusStreams,
-        referral_code: user.referral_code || (updatedCount > 500 ? spotifyUserId : null)
+        referral_code: user.referral_code || spotifyUserId
     })
 
     return { updatedCount, bonusStreams }
