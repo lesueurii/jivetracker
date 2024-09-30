@@ -24,8 +24,10 @@ const walletStyling = {
 export default function RegistrationForm() {
     const { publicKey } = useWallet();
     const [hasSpotifyToken, setHasSpotifyToken] = useState(false);
+    const [storedPublicKey, setStoredPublicKey] = useState<string | null>(null);
 
     useEffect(() => {
+        // Check for Spotify token
         const checkSpotifyToken = () => {
             const token = localStorage.getItem('spotify_access_token');
             setHasSpotifyToken(!!token);
@@ -34,10 +36,23 @@ export default function RegistrationForm() {
         checkSpotifyToken();
         window.addEventListener('spotifyTokenChanged', checkSpotifyToken);
 
+        // Check for stored public key
+        const storedKey = sessionStorage.getItem('publicKey');
+        setStoredPublicKey(storedKey);
+
         return () => {
             window.removeEventListener('spotifyTokenChanged', checkSpotifyToken);
         };
     }, []);
+
+    useEffect(() => {
+        if (publicKey) {
+            sessionStorage.setItem('publicKey', publicKey.toString());
+            setStoredPublicKey(publicKey.toString());
+        }
+    }, [publicKey]);
+
+    const isWalletConnected = publicKey || storedPublicKey;
 
     return (
         <>
@@ -49,7 +64,7 @@ export default function RegistrationForm() {
                         <p className="text-gray-600 mb-3">Connect your Solana wallet to get started.</p>
                         <WalletMultiButtonDynamic style={walletStyling} />
                     </div>
-                    {publicKey && (
+                    {isWalletConnected && (
                         <div>
                             <h3 className="text-lg font-semibold mb-2">Step 2: Connect Spotify</h3>
                             <p className="text-gray-600 mb-3">Link your Spotify account to track your jives.</p>
@@ -58,7 +73,7 @@ export default function RegistrationForm() {
                             </div>
                         </div>
                     )}
-                    {publicKey && hasSpotifyToken && (
+                    {isWalletConnected && hasSpotifyToken && (
                         <div>
                             <div className="relative inline-block group">
                                 <h3 className="text-lg font-semibold mb-2">Your Stream Counts</h3>
