@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { copyToClipboard } from '../utils/common';
-import { fetchSpotifyUserId } from '../utils/spotify';
+import { fetchSpotifyUserId, handleTokenExpiration } from '../utils/spotify';
 
 export default function ReferralDashboard() {
     const [isLoading, setIsLoading] = useState(false);
@@ -9,19 +9,39 @@ export default function ReferralDashboard() {
     const [generatedStreams, setGeneratedStreams] = useState(0);
 
     const getSpotifyUserId = async () => {
-        const token = localStorage.getItem('spotify_access_token');
+        let token = localStorage.getItem('spotify_access_token');
+        const refreshToken = localStorage.getItem('spotify_refresh_token');
+        const clientId = localStorage.getItem('spotify_client_id');
+
         if (token) {
             try {
                 const id = await fetchSpotifyUserId(token);
                 setSpotifyUserId(id);
-            } catch (error) {
-                console.error('Error fetching Spotify user ID:', error);
-                window.dispatchEvent(new CustomEvent('showToast', {
-                    detail: {
-                        message: 'Failed to fetch Spotify user ID',
-                        type: 'error'
+            } catch (error: any) {
+                if (error.message === 'Failed to fetch Spotify user profile' && refreshToken && clientId) {
+                    try {
+                        const newToken = await handleTokenExpiration(refreshToken, clientId);
+                        localStorage.setItem('spotify_access_token', newToken);
+                        const id = await fetchSpotifyUserId(newToken);
+                        setSpotifyUserId(id);
+                    } catch (refreshError) {
+                        console.error('Error refreshing Spotify token:', refreshError);
+                        window.dispatchEvent(new CustomEvent('showToast', {
+                            detail: {
+                                message: 'Failed to refresh Spotify token. Please log in again.',
+                                type: 'error'
+                            }
+                        }));
                     }
-                }));
+                } else {
+                    console.error('Error fetching Spotify user ID:', error);
+                    window.dispatchEvent(new CustomEvent('showToast', {
+                        detail: {
+                            message: 'Failed to fetch Spotify user ID',
+                            type: 'error'
+                        }
+                    }));
+                }
             }
         }
     };
