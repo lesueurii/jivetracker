@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Toast from './Toast'
+import { getAbbreviatedAddress } from '../utils/common'
+import Tooltip from './Tooltip'
 
 interface LeaderboardEntry {
     rank: number;
@@ -14,11 +16,21 @@ export default function Leaderboard() {
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
-    const [isInitialLoad, setIsInitialLoad] = useState(true)
-    const [limit, setLimit] = useState<number>(25)
+    const [limit, setLimit] = useState<number>(10)
     const [dateRange, setDateRange] = useState<string>('all')
+    const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-    const fetchLeaderboard = (isButtonClick: boolean = false) => {
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
+        if (toastTimeoutRef.current) {
+            clearTimeout(toastTimeoutRef.current)
+        }
+        setToast({ message, type })
+        toastTimeoutRef.current = setTimeout(() => {
+            setToast(null)
+        }, 3000)
+    }, [])
+
+    const fetchLeaderboard = useCallback((isButtonClick: boolean = false) => {
         setIsLoading(true)
         fetch(`/api/leaderboard?limit=${limit}&dateRange=${dateRange}`)
             .then(response => response.json())
@@ -26,12 +38,12 @@ export default function Leaderboard() {
                 if (data && data.leaderboard && Array.isArray(data.leaderboard)) {
                     setLeaderboard(data.leaderboard);
                     if (isButtonClick) {
-                        setToast({ message: 'Leaderboard refreshed successfully', type: 'success' });
+                        showToast('Leaderboard refreshed successfully', 'success');
                     }
                 } else {
                     setLeaderboard([]);
                     if (isButtonClick) {
-                        setToast({ message: 'No leaderboard data available', type: 'info' });
+                        showToast('No leaderboard data available', 'info');
                     }
                 }
             })
@@ -39,94 +51,143 @@ export default function Leaderboard() {
                 console.error('Error fetching leaderboard:', error);
                 setLeaderboard([]);
                 if (isButtonClick) {
-                    setToast({ message: 'Failed to refresh leaderboard', type: 'error' });
+                    showToast('Failed to refresh leaderboard', 'error');
                 }
             })
             .finally(() => {
                 setIsLoading(false)
-                setIsInitialLoad(false)
-            });
-    }
+            })
+    }, [limit, dateRange, showToast])
 
     useEffect(() => {
         fetchLeaderboard()
-    }, [limit, dateRange]);
+    }, [fetchLeaderboard])
 
     const handleRefreshClick = () => {
         fetchLeaderboard(true)
     }
 
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Address copied to clipboard', 'success');
+        }).catch(() => {
+            showToast('Failed to copy address', 'error');
+        }).finally(() => {
+            // Reset toast state after a short delay
+            setTimeout(() => {
+                setToast(null);
+            }, 3100); // Slightly longer than the toast duration
+        });
+    };
+
+    const WalletAddress = ({ address }: { address: string }) => (
+        <Tooltip text={address}>
+            <span
+                className="cursor-pointer hover:text-blue-500"
+                onClick={(e) => {
+                    e.stopPropagation(); // Prevent the tooltip from interfering
+                    copyToClipboard(address);
+                }}
+            >
+                {getAbbreviatedAddress(address)}
+            </span>
+        </Tooltip>
+    );
+
     return (
         <>
-            <div className="flex justify-between items-center mb-4">
-                <div className="relative inline-block group">
-                    <h3 className="text-xl font-semibold cursor-help">
-                        Leaderboard
-                    </h3>
-                    <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white text-sm rounded py-2 px-4 bottom-full left-1/2 transform -translate-x-1/2 mb-2 whitespace-nowrap">
-                        Showing top 25 entries
-                        <svg className="absolute text-gray-800 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0" /></svg>
+            <div className="mb-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                    <div className="relative inline-block group mb-4 sm:mb-0">
+                        <h3 className="text-xl font-semibold cursor-help">
+                            Leaderboard
+                        </h3>
+                        <div className="absolute z-10 invisible group-hover:visible bg-gray-800 text-white text-sm rounded py-2 px-4 bottom-full left-1/2 transform -translate-x-1/2 mb-2 whitespace-nowrap">
+                            Showing top {limit} entries
+                            <svg className="absolute text-gray-800 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0" /></svg>
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <select
-                        value={limit}
-                        onChange={(e) => setLimit(Number(e.target.value))}
-                        className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                    >
-                        <option value={10}>Top 10</option>
-                        <option value={25}>Top 25</option>
-                        <option value={50}>Top 50</option>
-                    </select>
-                    <select
-                        value={dateRange}
-                        onChange={(e) => setDateRange(e.target.value)}
-                        className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-                    >
-                        <option value="all">All Time</option>
-                        <option value="24h">Last 24 Hours</option>
-                        <option value="7d">Last 7 Days</option>
-                        <option value="30d">Last 30 Days</option>
-                    </select>
-                    <button
-                        onClick={handleRefreshClick}
-                        disabled={isLoading}
-                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:bg-blue-300 transition-colors duration-200"
-                        aria-label="Refresh leaderboard"
-                    >
-                        <span className={`inline-block ${isLoading ? 'animate-spin' : ''}`}>↻</span>
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                        <select
+                            value={limit}
+                            onChange={(e) => setLimit(Number(e.target.value))}
+                            className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500 w-full sm:w-auto"
+                        >
+                            <option value={10}>Top 10</option>
+                            <option value={25}>Top 25</option>
+                            <option value={50}>Top 50</option>
+                        </select>
+                        <select
+                            value={dateRange}
+                            onChange={(e) => setDateRange(e.target.value)}
+                            className="bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500 w-full sm:w-auto"
+                        >
+                            <option value="all">All Time</option>
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                        </select>
+                        <button
+                            onClick={handleRefreshClick}
+                            disabled={isLoading}
+                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:bg-blue-300 transition-colors duration-200 w-full sm:w-auto"
+                            aria-label="Refresh leaderboard"
+                        >
+                            <span className={`inline-block ${isLoading ? 'animate-spin' : ''}`}>↻</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solana Wallet</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stream Count</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {leaderboard.length > 0 ? (
-                            leaderboard.map((entry: LeaderboardEntry) => (
-                                <tr key={entry.solanaWalletAddress}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.rank}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.solanaWalletAddress}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.streamCount}</td>
-                                </tr>
-                            ))
-                        ) : (
+                <div className="hidden sm:block"> {/* Table view for larger screens */}
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
                             <tr>
-                                <td colSpan={3} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No entries in the leaderboard yet.</td>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solana Wallet</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stream Count</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {leaderboard.length > 0 ? (
+                                leaderboard.map((entry: LeaderboardEntry) => (
+                                    <tr key={entry.solanaWalletAddress}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.rank}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <WalletAddress address={entry.solanaWalletAddress} />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.streamCount}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={3} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No entries in the leaderboard yet.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="sm:hidden"> {/* Card view for mobile screens */}
+                    {leaderboard.length > 0 ? (
+                        leaderboard.map((entry: LeaderboardEntry) => (
+                            <div key={entry.solanaWalletAddress} className="bg-white shadow rounded-lg p-4 mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-lg font-semibold">#{entry.rank}</span>
+                                    <span className="text-sm text-gray-500">{entry.streamCount} streams</span>
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                    Wallet: <WalletAddress address={entry.solanaWalletAddress} />
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center text-gray-500 py-4">No entries in the leaderboard yet.</div>
+                    )}
+                </div>
             </div>
 
-            {!isInitialLoad && toast && (
+            {toast && (
                 <Toast
                     message={toast.message}
                     type={toast.type}
