@@ -4,42 +4,40 @@ import { useEffect, useState } from 'react'
 import Tooltip from './Tooltip'
 import { formatDistanceToNow } from 'date-fns';
 
-export default function StreamCount() {
-    const [streamCount, setStreamCount] = useState(0)
-    const [bonusStreams, setBonusStreams] = useState(0)
-    const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+interface StreamCountData {
+    streamCount: number;
+    bonusStreams: number;
+    lastUpdated: string;
+}
 
-    const fetchStreamCount = () => {
-        const spotifyAccessToken = localStorage.getItem('spotify_access_token');
-        if (spotifyAccessToken) {
-            fetch(`/api/count-streams?spotify_access_token=${encodeURIComponent(spotifyAccessToken)}`)
-                .then(response => response.json())
-                .then(data => {
-                    setStreamCount(data.streamCount)
-                    setBonusStreams(data.bonusStreams || 0)
-                    const now = new Date().toISOString();
-                    localStorage.setItem('lastStreamCountUpdate', now);
-                    setLastUpdated(now);
-                })
-        }
-    }
+export default function StreamCount() {
+    const [streamCountData, setStreamCountData] = useState<StreamCountData>({
+        streamCount: 0,
+        bonusStreams: 0,
+        lastUpdated: ''
+    });
 
     useEffect(() => {
-        const storedLastUpdated = localStorage.getItem('lastStreamCountUpdate');
-        if (storedLastUpdated) {
-            setLastUpdated(storedLastUpdated);
-        }
+        const loadStreamCountData = () => {
+            const storedData = localStorage.getItem('streamCountData');
+            if (storedData) {
+                setStreamCountData(JSON.parse(storedData));
+            }
+        };
 
-        const handleStreamCountUpdate = () => fetchStreamCount();
+        loadStreamCountData();
+
+        const handleStreamCountUpdate = () => loadStreamCountData();
         window.addEventListener('streamCountUpdated', handleStreamCountUpdate);
 
         return () => {
             window.removeEventListener('streamCountUpdated', handleStreamCountUpdate);
         };
-    }, [])
+    }, []);
 
-    const totalStreams = streamCount + bonusStreams || 0
-    const tooltipText = `Referral Streams: ${bonusStreams}`
+    const { streamCount, bonusStreams, lastUpdated } = streamCountData;
+    const totalStreams = streamCount + bonusStreams;
+    const tooltipText = `Referral Streams: ${bonusStreams}`;
 
     const formattedLastUpdated = lastUpdated
         ? `Last updated ${formatDistanceToNow(new Date(lastUpdated))} ago`
