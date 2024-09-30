@@ -25,17 +25,16 @@ export default function StreamCount() {
     }
 
     useEffect(() => {
-        fetchStreamCount();
-
         const storedLastUpdated = localStorage.getItem('lastStreamCountUpdate');
         if (storedLastUpdated) {
             setLastUpdated(storedLastUpdated);
         }
 
-        window.addEventListener('streamCountUpdated', fetchStreamCount);
+        const handleStreamCountUpdate = () => fetchStreamCount();
+        window.addEventListener('streamCountUpdated', handleStreamCountUpdate);
 
         return () => {
-            window.removeEventListener('streamCountUpdated', fetchStreamCount);
+            window.removeEventListener('streamCountUpdated', handleStreamCountUpdate);
         };
     }, [])
 

@@ -53,48 +53,6 @@ export default function SpotifyButton() {
         }
     }, []);
 
-    useEffect(() => {
-        console.log('SpotifyButton useEffect running');
-        const token = localStorage.getItem('spotify_access_token');
-        const publicKey = sessionStorage.getItem('publicKey');
-
-        if (token && publicKey) {
-            console.log('Token and publicKey found, setting up upsertStream');
-            setIsAuthenticated(true);
-
-            // Run immediately
-            runUpsertStream();
-
-            // Set up interval to run every hour
-            intervalRef.current = setInterval(() => {
-                console.log('Interval triggered, running upsertStream');
-                runUpsertStream();
-            }, 60 * 60 * 1000);
-
-            // Clean up interval on component unmount
-            return () => {
-                console.log('Cleaning up interval');
-                if (intervalRef.current) {
-                    clearInterval(intervalRef.current);
-                }
-            };
-        } else {
-            console.log('No token or publicKey found');
-            // Check for callback
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            if (code) {
-                console.log('Code found in URL, exchanging for token');
-                exchangeCodeForToken(code);
-            }
-        }
-
-        // Check if client ID exists in local storage
-        const storedClientId = localStorage.getItem('spotify_client_id');
-        if (storedClientId) {
-            setClientId(storedClientId);
-        }
-    }, [runUpsertStream]);
 
     const exchangeCodeForToken = useCallback(async (code: string) => {
         setIsLoading(true);
@@ -137,6 +95,46 @@ export default function SpotifyButton() {
         }
     }, [clientId, runUpsertStream]);
 
+    useEffect(() => {
+        console.log('SpotifyButton useEffect running');
+        const token = localStorage.getItem('spotify_access_token');
+        const publicKey = sessionStorage.getItem('publicKey');
+
+        if (token && publicKey) {
+            console.log('Token and publicKey found, setting up upsertStream');
+            setIsAuthenticated(true);
+
+            // Run immediately
+            runUpsertStream();
+
+            // Set up interval to run every hour
+            const intervalId = setInterval(() => {
+                console.log('Interval triggered, running upsertStream');
+                runUpsertStream();
+            }, 60 * 60 * 1000);
+
+            // Clean up interval on component unmount
+            return () => {
+                console.log('Cleaning up interval');
+                clearInterval(intervalId);
+            };
+        } else {
+            console.log('No token or publicKey found');
+            // Check for callback
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                console.log('Code found in URL, exchanging for token');
+                exchangeCodeForToken(code);
+            }
+        }
+
+        // Check if client ID exists in local storage
+        const storedClientId = localStorage.getItem('spotify_client_id');
+        if (storedClientId) {
+            setClientId(storedClientId);
+        }
+    }, [runUpsertStream, exchangeCodeForToken]);
     const handleLogin = useCallback(() => {
         const storedClientId = localStorage.getItem('spotify_client_id');
         if (storedClientId) {

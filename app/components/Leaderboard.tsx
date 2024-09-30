@@ -30,7 +30,7 @@ export default function Leaderboard() {
         }, 3000)
     }, [])
 
-    const fetchLeaderboard = useCallback((isButtonClick: boolean = false) => {
+    const fetchLeaderboard = useCallback((limit: number, dateRange: string, isButtonClick: boolean = false) => {
         setIsLoading(true)
         fetch(`/api/leaderboard?limit=${limit}&dateRange=${dateRange}`)
             .then(response => response.json())
@@ -57,14 +57,14 @@ export default function Leaderboard() {
             .finally(() => {
                 setIsLoading(false)
             })
-    }, [limit, dateRange, showToast])
+    }, [showToast])
 
     useEffect(() => {
-        fetchLeaderboard()
-    }, [fetchLeaderboard])
+        fetchLeaderboard(limit, dateRange)
+    }, [fetchLeaderboard, limit, dateRange])
 
     const handleRefreshClick = () => {
-        fetchLeaderboard(true)
+        fetchLeaderboard(limit, dateRange, true)
     }
 
     const handleCopyToClipboard = (text: string) => {

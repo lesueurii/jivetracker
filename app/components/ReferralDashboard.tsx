@@ -90,7 +90,6 @@ export default function ReferralDashboard() {
 
     return (
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Referral Dashboard</h2>
             <div className="flex justify-center mb-8">
                 <button
                     onClick={handleCopyReferralLink}
@@ -114,7 +113,7 @@ export default function ReferralDashboard() {
             <div className="grid grid-cols-2 gap-8 mb-8">
                 <div className="bg-gray-50 rounded-lg p-6 text-center">
                     <p className="text-5xl font-bold text-green-600 mb-2">{generatedStreams}</p>
-                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Referral Streams</p>
+                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Generated Streams</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-6 text-center">
                     <p className="text-5xl font-bold text-blue-600 mb-2">{bonusStreams}</p>
