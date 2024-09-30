@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Toast from './Toast'
-import { getAbbreviatedAddress } from '../utils/common'
+import { getAbbreviatedAddress, copyToClipboard } from '../utils/common'
 import Tooltip from './Tooltip'
 
 interface LeaderboardEntry {
@@ -67,16 +67,13 @@ export default function Leaderboard() {
         fetchLeaderboard(true)
     }
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('Address copied to clipboard', 'success');
-        }).catch(() => {
-            showToast('Failed to copy address', 'error');
-        }).finally(() => {
-            // Reset toast state after a short delay
-            setTimeout(() => {
-                setToast(null);
-            }, 3100); // Slightly longer than the toast duration
+    const handleCopyToClipboard = (text: string) => {
+        copyToClipboard(text).then((success) => {
+            if (success) {
+                showToast('Address copied to clipboard', 'success');
+            } else {
+                showToast('Failed to copy address', 'error');
+            }
         });
     };
 
@@ -86,7 +83,7 @@ export default function Leaderboard() {
                 className="cursor-pointer hover:text-blue-500"
                 onClick={(e) => {
                     e.stopPropagation(); // Prevent the tooltip from interfering
-                    copyToClipboard(address);
+                    handleCopyToClipboard(address);
                 }}
             >
                 {getAbbreviatedAddress(address)}
@@ -192,7 +189,6 @@ export default function Leaderboard() {
                     message={toast.message}
                     type={toast.type}
                     duration={3000}
-                    onClose={() => setToast(null)}
                 />
             )}
         </>

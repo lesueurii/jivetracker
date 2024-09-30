@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import SpotifyButton from "./SpotifyButton";
 import dynamic from 'next/dynamic';
 import StreamCount from "./StreamCount";
-import ReferralButton from "./ReferralButton";
+import ReferralDashboard from "./ReferralDashboard";
+
 const WalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
     { ssr: false }
@@ -68,7 +69,11 @@ export default function RegistrationForm() {
                             </div>
                             <p className="text-gray-600 mb-3">Here&apos;s how many times you&apos;ve streamed Jive:</p>
                             <StreamCount />
-                            <ReferralButton />
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-2">Your Referral Dashboard</h3>
+                                <p className="text-gray-600 mb-3">Refer other Jive listeners to get bonus streams</p>
+                                <ReferralDashboard />
+                            </div>
                         </div>
                     )}
                 </div>

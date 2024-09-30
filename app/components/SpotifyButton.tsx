@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import upsertStream from '../utils/upsert-stream';
 import Tooltip from './Tooltip';
-import { generateCodeVerifier, generateCodeChallenge } from '../utils/common';
+import { generateCodeVerifier, generateCodeChallenge, copyToClipboard } from '../utils/common';
 
 const REDIRECT_URI = typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app';
 
@@ -192,48 +192,14 @@ export default function SpotifyButton() {
         }
     }, []);
 
-    const copyToClipboard = useCallback((text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            setCopiedText(text);
-            // Reset the copiedText after 2 seconds
-            setTimeout(() => setCopiedText(''), 2000);
-        }).catch((err) => {
-            console.error('Failed to copy: ', err);
-        });
-    }, []);
-
-    const generateReferralLink = useCallback(async () => {
-        const token = localStorage.getItem('spotify_access_token');
-        if (token) {
-            try {
-                const response = await fetch('/api/generate-referral', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ spotify_access_token: token }),
-                });
-                if (response.ok) {
-                    const { referralLink } = await response.json();
-                    // Display the referral link to the user (e.g., in a modal or copy to clipboard)
-                    navigator.clipboard.writeText(referralLink);
-                    window.dispatchEvent(new CustomEvent('showToast', {
-                        detail: {
-                            message: 'Referral link copied to clipboard!',
-                            type: 'success'
-                        }
-                    }));
-                } else {
-                    throw new Error('Failed to generate referral link');
-                }
-            } catch (error) {
-                console.error('Error generating referral link:', error);
-                window.dispatchEvent(new CustomEvent('showToast', {
-                    detail: {
-                        message: 'Failed to generate referral link',
-                        type: 'error'
-                    }
-                }));
+    const handleCopyToClipboard = useCallback((text: string) => {
+        copyToClipboard(text).then((success) => {
+            if (success) {
+                setCopiedText(text);
+                // Reset the copiedText after 2 seconds
+                setTimeout(() => setCopiedText(''), 2000);
             }
-        }
+        });
     }, []);
 
     const truncatedDescription = truncateDescription(appDescription, 50);
@@ -265,14 +231,14 @@ export default function SpotifyButton() {
                             <li>Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Spotify Developer Dashboard</a></li>
                             <li>Click on &quot;Create an App&quot;</li>
                             <li>For App Name, enter <Tooltip text={copiedText === `${sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker` ? 'Copied!' : 'Click to copy'}>
-                                <button onClick={() => copyToClipboard(`${sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker`)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
+                                <button onClick={() => handleCopyToClipboard(`${sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker`)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
                                     {sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker
                                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                 </button>
                             </Tooltip></li>
                             <li>For App Description, enter <Tooltip text={copiedText === appDescription ? 'Copied!' : 'Click to copy'}>
                                 <button
-                                    onClick={() => copyToClipboard(appDescription)}
+                                    onClick={() => handleCopyToClipboard(appDescription)}
                                     className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center"
                                 >
                                     {truncatedDescription}
@@ -282,7 +248,7 @@ export default function SpotifyButton() {
                                 </button>
                             </Tooltip></li>
                             <li>For Redirect URIs, enter: <Tooltip text={copiedText === REDIRECT_URI ? 'Copied!' : 'Click to copy'}>
-                                <button onClick={() => copyToClipboard(REDIRECT_URI)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
+                                <button onClick={() => handleCopyToClipboard(REDIRECT_URI)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
                                     {REDIRECT_URI}
                                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                 </button>
