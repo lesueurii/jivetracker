@@ -31,7 +31,7 @@ importers:
         version: 0.2.1(encoding@0.1.13)
       autoprefixer:
         specifier: 10.4.14
-        version: 10.4.14(postcss@8.4.22)
+        version: 10.4.14(postcss@8.4.31)
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -48,8 +48,8 @@ importers:
         specifier: 14.2.13
         version: 14.2.13(@babel/core@7.25.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       postcss:
-        specifier: 8.4.22
-        version: 8.4.22
+        specifier: 8.4.31
+        version: 8.4.31
       react:
         specifier: 18.2.0
         version: 18.2.0
@@ -58,7 +58,7 @@ importers:
         version: 18.2.0(react@18.2.0)
       tailwindcss:
         specifier: 3.3.1
-        version: 3.3.1(postcss@8.4.22)
+        version: 3.3.1(postcss@8.4.31)
       typescript:
         specifier: 5.0.4
         version: 5.0.4
@@ -4433,10 +4433,6 @@ packages:
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
-  postcss@8.4.22:
-    resolution: {integrity: sha512-XseknLAfRHzVWjCEtdviapiBtfLdgyzExD50Rg2ePaucEesyh8Wv4VPdW0nbyDa1ydbrAxV19jvMT4+LFmcNUA==}
-    engines: {node: ^10 || ^12 || >=14}
-
   postcss@8.4.31:
     resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
     engines: {node: ^10 || ^12 || >=14}
@@ -8719,14 +8715,14 @@ snapshots:
 
   atomic-sleep@1.0.0: {}
 
-  autoprefixer@10.4.14(postcss@8.4.22):
+  autoprefixer@10.4.14(postcss@8.4.31):
     dependencies:
       browserslist: 4.23.3
       caniuse-lite: 1.0.30001662
       fraction.js: 4.3.7
       normalize-range: 0.1.2
       picocolors: 1.1.0
-      postcss: 8.4.22
+      postcss: 8.4.31
       postcss-value-parser: 4.2.0
 
   available-typed-arrays@1.0.7:
@@ -9578,7 +9574,7 @@ snapshots:
       eslint: 8.38.0
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.6.3(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0(eslint@8.38.0))(eslint@8.38.0)
-      eslint-plugin-import: 2.30.0(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0(eslint@8.38.0))(eslint@8.38.0))(eslint@8.38.0)
+      eslint-plugin-import: 2.30.0(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-typescript@3.6.3)(eslint@8.38.0)
       eslint-plugin-jsx-a11y: 6.10.0(eslint@8.38.0)
       eslint-plugin-react: 7.36.1(eslint@8.38.0)
       eslint-plugin-react-hooks: 4.6.2(eslint@8.38.0)
@@ -9609,7 +9605,7 @@ snapshots:
       is-bun-module: 1.2.1
       is-glob: 4.0.3
     optionalDependencies:
-      eslint-plugin-import: 2.30.0(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0(eslint@8.38.0))(eslint@8.38.0))(eslint@8.38.0)
+      eslint-plugin-import: 2.30.0(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-typescript@3.6.3)(eslint@8.38.0)
     transitivePeerDependencies:
       - '@typescript-eslint/parser'
       - eslint-import-resolver-node
@@ -9627,7 +9623,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.30.0(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0(eslint@8.38.0))(eslint@8.38.0))(eslint@8.38.0):
+  eslint-plugin-import@2.30.0(@typescript-eslint/parser@5.62.0(eslint@8.38.0)(typescript@5.0.4))(eslint-import-resolver-typescript@3.6.3)(eslint@8.38.0):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -11278,28 +11274,28 @@ snapshots:
 
   possible-typed-array-names@1.0.0: {}
 
-  postcss-import@14.1.0(postcss@8.4.22):
+  postcss-import@14.1.0(postcss@8.4.31):
     dependencies:
-      postcss: 8.4.22
+      postcss: 8.4.31
       postcss-value-parser: 4.2.0
       read-cache: 1.0.0
       resolve: 1.22.8
 
-  postcss-js@4.0.1(postcss@8.4.22):
+  postcss-js@4.0.1(postcss@8.4.31):
     dependencies:
       camelcase-css: 2.0.1
-      postcss: 8.4.22
+      postcss: 8.4.31
 
-  postcss-load-config@3.1.4(postcss@8.4.22):
+  postcss-load-config@3.1.4(postcss@8.4.31):
     dependencies:
       lilconfig: 2.1.0
       yaml: 1.10.2
     optionalDependencies:
-      postcss: 8.4.22
+      postcss: 8.4.31
 
-  postcss-nested@6.0.0(postcss@8.4.22):
+  postcss-nested@6.0.0(postcss@8.4.31):
     dependencies:
-      postcss: 8.4.22
+      postcss: 8.4.31
       postcss-selector-parser: 6.1.2
 
   postcss-selector-parser@6.1.2:
@@ -11308,12 +11304,6 @@ snapshots:
       util-deprecate: 1.0.2
 
   postcss-value-parser@4.2.0: {}
-
-  postcss@8.4.22:
-    dependencies:
-      nanoid: 3.3.7
-      picocolors: 1.1.0
-      source-map-js: 1.2.1
 
   postcss@8.4.31:
     dependencies:
@@ -12112,7 +12102,7 @@ snapshots:
 
   system-architecture@0.1.0: {}
 
-  tailwindcss@3.3.1(postcss@8.4.22):
+  tailwindcss@3.3.1(postcss@8.4.31):
     dependencies:
       arg: 5.0.2
       chokidar: 3.6.0
@@ -12128,11 +12118,11 @@ snapshots:
       normalize-path: 3.0.0
       object-hash: 3.0.0
       picocolors: 1.1.0
-      postcss: 8.4.22
-      postcss-import: 14.1.0(postcss@8.4.22)
-      postcss-js: 4.0.1(postcss@8.4.22)
-      postcss-load-config: 3.1.4(postcss@8.4.22)
-      postcss-nested: 6.0.0(postcss@8.4.22)
+      postcss: 8.4.31
+      postcss-import: 14.1.0(postcss@8.4.31)
+      postcss-js: 4.0.1(postcss@8.4.31)
+      postcss-load-config: 3.1.4(postcss@8.4.31)
+      postcss-nested: 6.0.0(postcss@8.4.31)
       postcss-selector-parser: 6.1.2
       postcss-value-parser: 4.2.0
       quick-lru: 5.1.1

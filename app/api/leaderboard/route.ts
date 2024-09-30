@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { getLeaderboard } from '@/app/utils/db'
-import { getAbbreviatedAddress } from '@/app/utils/common'
 
 export async function GET(request: Request) {
     try {
