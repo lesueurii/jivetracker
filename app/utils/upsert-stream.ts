@@ -34,6 +34,7 @@ const upsertStream = async ({ spotify_access_token, solana_wallet_address }: Ups
         localStorage.setItem('streamCountData', JSON.stringify({
             streamCount: countStreamsData.streamCount,
             bonusStreams: countStreamsData.bonusStreams || 0,
+            referrals: countStreamsData.referrals || 0,
             lastUpdated: new Date().toISOString()
         }));
 

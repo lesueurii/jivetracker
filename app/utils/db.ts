@@ -26,18 +26,34 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
     const updatedCount = updatedStreamRecords.length
     const bonusStreams = user.bonus_streams || 0
 
+    // Only update referrer if it hasn't been set before
+    if (!user.referrer && referralCode && referralCode !== spotifyUserId) {
+        await incrementReferralCount(referralCode)
+        user.referrer = referralCode
+    }
+
     await updateUser(spotifyUserId, {
         solana_wallet_address: solanaWalletAddress,
         streams: updatedCount,
         stream_records: updatedStreamRecords,
         bonus_streams: bonusStreams,
-        referral_code: user.referral_code || spotifyUserId
+        referrer: user.referrer || spotifyUserId,
+        referrals: user.referrals || 0
     })
 
     return { updatedCount, bonusStreams }
 }
 
-export async function getLeaderboard(limit: number, dateRange: string) {
+async function incrementReferralCount(referrerSpotifyId: string) {
+    const referrer = await getUserBySpotifyId(referrerSpotifyId)
+    if (referrer) {
+        await updateUser(referrerSpotifyId, {
+            referrals: (referrer.referrals || 0) + 1
+        })
+    }
+}
+
+export async function getLeaderboard(limit: number, dateRange: string, leaderboardType: 'streams' | 'referrals' = 'streams') {
     const users = await getUsers() || {}
     const now = new Date()
     const dateLimit = getDateLimit(dateRange, now)
@@ -48,10 +64,16 @@ export async function getLeaderboard(limit: number, dateRange: string) {
             return {
                 spotifyUserId,
                 streamCount: validStreams + (userData.bonus_streams || 0),
+                referralCount: userData.referrals || 0,
                 solanaWalletAddress: userData.solana_wallet_address
             }
         })
-        .sort((a, b) => b.streamCount - a.streamCount)
+        .sort((a, b) => {
+            if (leaderboardType === 'referrals') {
+                return b.referralCount - a.referralCount
+            }
+            return b.streamCount - a.streamCount
+        })
         .slice(0, limit)
         .map((entry, index) => ({ ...entry, rank: index + 1 }))
 

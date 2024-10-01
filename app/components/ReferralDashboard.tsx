@@ -26,6 +26,8 @@ export default function ReferralDashboard() {
                         setSpotifyUserId(id);
                     } catch (refreshError) {
                         console.error('Error refreshing Spotify token:', refreshError);
+                        localStorage.removeItem('spotify_access_token');
+                        localStorage.removeItem('spotify_refresh_token');
                         window.dispatchEvent(new CustomEvent('showToast', {
                             detail: {
                                 message: 'Failed to refresh Spotify token. Please log in again.',

@@ -6,7 +6,7 @@ const JIVE_TRACK_ID = '2iFxaYqQX6yNusMzEUiaPf'
 
 export async function POST(request: Request) {
   try {
-    const { spotify_access_token, solana_wallet_address, referral_code } = await request.json()
+    const { spotify_access_token, solana_wallet_address, referrer } = await request.json()
 
     if (!spotify_access_token) {
       return NextResponse.json({ error: 'Missing Spotify access token' }, { status: 400 })
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       .filter((item: any) => item.track.id === JIVE_TRACK_ID)
       .map((item: any) => item.played_at)
 
-    const { updatedCount, bonusStreams } = await updateStreamCount(spotifyUser.id, solana_wallet_address, streamRecords, referral_code)
+    const { updatedCount, bonusStreams } = await updateStreamCount(spotifyUser.id, solana_wallet_address, streamRecords, referrer)
 
     return NextResponse.json({ streamCount: updatedCount, bonusStreams })
   } catch (error) {
