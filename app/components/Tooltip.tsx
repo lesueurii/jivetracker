@@ -1,29 +1,35 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface TooltipProps {
     text: string;
-    children: React.ReactNode;
+    visible: boolean;
+    targetRef: React.RefObject<HTMLElement>;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ text, children }) => {
-    const [isVisible, setIsVisible] = useState(false);
+const Tooltip: React.FC<TooltipProps> = ({ text, visible, targetRef }) => {
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+
+    useEffect(() => {
+        if (visible && targetRef.current) {
+            const rect = targetRef.current.getBoundingClientRect();
+            setPosition({
+                top: rect.top - 40, // Adjust this value as needed
+                left: rect.left + rect.width / 2
+            });
+        }
+    }, [visible, targetRef]);
+
+    if (!visible) return null;
 
     return (
-        <div className="relative inline-block">
-            <div
-                onMouseEnter={() => setIsVisible(true)}
-                onMouseLeave={() => setIsVisible(false)}
-            >
-                {children}
-            </div>
-            {isVisible && (
-                <div className="absolute z-10 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm tooltip dark:bg-gray-700 bottom-full left-1/2 transform -translate-x-1/2 mb-2 whitespace-nowrap">
-                    {text}
-                    <div className="tooltip-arrow" data-popper-arrow></div>
-                </div>
-            )}
+        <div
+            className="fixed z-10 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm tooltip dark:bg-gray-700 whitespace-nowrap transform -translate-x-1/2"
+            style={{ top: `${position.top}px`, left: `${position.left}px` }}
+        >
+            {text}
+            <div className="tooltip-arrow" data-popper-arrow></div>
         </div>
     );
 };
