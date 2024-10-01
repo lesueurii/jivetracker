@@ -1,4 +1,4 @@
-import Toast from '../components/Toast';
+import { handleTokenExpiration } from './spotify';
 
 interface UpsertStreamParams {
     spotify_access_token: string;
@@ -16,12 +16,12 @@ const upsertStream = async ({ spotify_access_token, solana_wallet_address }: Ups
 
         if (!response.ok) {
             if (response.status === 401) {
-                handleTokenExpiration();
+                rotateSpotifyToken();
                 return;
             }
             const { message } = await response.json();
             if (message === 'Refresh Token') {
-                handleTokenExpiration();
+                rotateSpotifyToken();
                 return;
             }
             throw new Error('Failed to count streams');
@@ -30,35 +30,32 @@ const upsertStream = async ({ spotify_access_token, solana_wallet_address }: Ups
         const countStreamsData = await response.json();
         console.log('Stream count response:', countStreamsData);
 
+        // Save stream count data to localStorage
+        localStorage.setItem('streamCountData', JSON.stringify({
+            streamCount: countStreamsData.streamCount,
+            bonusStreams: countStreamsData.bonusStreams || 0,
+            referrals: countStreamsData.referrals || 0,
+            lastUpdated: new Date().toISOString()
+        }));
+
         window.dispatchEvent(new Event('streamCountUpdated'));
     } catch (error: unknown) {
         if (error instanceof Error && error.message === 'Refresh Token') {
-            handleTokenExpiration();
+            rotateSpotifyToken();
             return;
         }
         console.error('Error counting streams:', error);
     }
 };
 
-const handleTokenExpiration = async () => {
+const rotateSpotifyToken = async () => {
     const refreshToken = localStorage.getItem('spotify_refresh_token');
-    if (refreshToken) {
-        try {
-            const response = await fetch('/api/refresh-spotify-token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh_token: refreshToken }),
-            });
-
-            if (response.ok) {
-                const { access_token } = await response.json();
-                localStorage.setItem('spotify_access_token', access_token);
-                window.dispatchEvent(new Event('spotifyTokenChanged'));
-                return;
-            }
-        } catch (error) {
-            console.error('Error refreshing Spotify token:', error);
-        }
+    const clientId = localStorage.getItem('spotify_client_id');
+    if (refreshToken && clientId) {
+        const accessToken = await handleTokenExpiration(refreshToken, clientId);
+        localStorage.setItem('spotify_access_token', accessToken);
+        window.dispatchEvent(new Event('spotifyTokenChanged'));
+        return;
     }
 
     // If refresh fails or no refresh token, proceed with logout

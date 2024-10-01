@@ -2,14 +2,16 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Toast from './Toast'
-import { getAbbreviatedAddress } from '../utils/common'
+import { getAbbreviatedAddress, copyToClipboard } from '../utils/common'
 import Tooltip from './Tooltip'
 
 interface LeaderboardEntry {
     rank: number;
     spotifyUserId: string;
     streamCount: number;
+    bonusStreams?: number;  // Make bonusStreams optional
     solanaWalletAddress: string;
+    referralCount: number;  // Add this line
 }
 
 export default function Leaderboard() {
@@ -30,13 +32,18 @@ export default function Leaderboard() {
         }, 3000)
     }, [])
 
-    const fetchLeaderboard = useCallback((isButtonClick: boolean = false) => {
+    const fetchLeaderboard = useCallback((limit: number, dateRange: string, isButtonClick: boolean = false) => {
         setIsLoading(true)
         fetch(`/api/leaderboard?limit=${limit}&dateRange=${dateRange}`)
             .then(response => response.json())
             .then(data => {
                 if (data && data.leaderboard && Array.isArray(data.leaderboard)) {
-                    setLeaderboard(data.leaderboard);
+                    const processedLeaderboard = data.leaderboard.map((entry: LeaderboardEntry) => ({
+                        ...entry,
+                        bonusStreams: entry.bonusStreams || 0,
+                        referralCount: entry.referralCount || 0  // Add this line
+                    }));
+                    setLeaderboard(processedLeaderboard);
                     if (isButtonClick) {
                         showToast('Leaderboard refreshed successfully', 'success');
                     }
@@ -57,42 +64,47 @@ export default function Leaderboard() {
             .finally(() => {
                 setIsLoading(false)
             })
-    }, [limit, dateRange, showToast])
+    }, [showToast])
 
     useEffect(() => {
-        fetchLeaderboard()
-    }, [fetchLeaderboard])
+        fetchLeaderboard(limit, dateRange)
+    }, [fetchLeaderboard, limit, dateRange])
 
     const handleRefreshClick = () => {
-        fetchLeaderboard(true)
+        fetchLeaderboard(limit, dateRange, true)
     }
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('Address copied to clipboard', 'success');
-        }).catch(() => {
-            showToast('Failed to copy address', 'error');
-        }).finally(() => {
-            // Reset toast state after a short delay
-            setTimeout(() => {
-                setToast(null);
-            }, 3100); // Slightly longer than the toast duration
+    const handleCopyToClipboard = (text: string) => {
+        copyToClipboard(text).then((success) => {
+            if (success) {
+                showToast('Address copied to clipboard', 'success');
+            } else {
+                showToast('Failed to copy address', 'error');
+            }
         });
     };
 
-    const WalletAddress = ({ address }: { address: string }) => (
-        <Tooltip text={address}>
-            <span
-                className="cursor-pointer hover:text-blue-500"
-                onClick={(e) => {
-                    e.stopPropagation(); // Prevent the tooltip from interfering
-                    copyToClipboard(address);
-                }}
-            >
-                {getAbbreviatedAddress(address)}
-            </span>
-        </Tooltip>
-    );
+    const WalletAddress = ({ address }: { address: string }) => {
+        const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+        const addressRef = useRef<HTMLSpanElement>(null);
+
+        return (
+            <Tooltip text={address} visible={isTooltipVisible} targetRef={addressRef}>
+                <span
+                    ref={addressRef}
+                    className="cursor-pointer hover:text-blue-500"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyToClipboard(address);
+                    }}
+                    onMouseEnter={() => setIsTooltipVisible(true)}
+                    onMouseLeave={() => setIsTooltipVisible(false)}
+                >
+                    {getAbbreviatedAddress(address)}
+                </span>
+            </Tooltip>
+        );
+    };
 
     return (
         <>
@@ -146,7 +158,9 @@ export default function Leaderboard() {
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solana Wallet</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stream Count</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Streams</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bonus Streams</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrals</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -158,11 +172,13 @@ export default function Leaderboard() {
                                             <WalletAddress address={entry.solanaWalletAddress} />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.streamCount}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.bonusStreams || 0}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.referralCount}</td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={3} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No entries in the leaderboard yet.</td>
+                                    <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No entries in the leaderboard yet.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -174,10 +190,16 @@ export default function Leaderboard() {
                             <div key={entry.solanaWalletAddress} className="bg-white shadow rounded-lg p-4 mb-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-lg font-semibold">#{entry.rank}</span>
-                                    <span className="text-sm text-gray-500">{entry.streamCount} streams</span>
+                                    <div className="text-sm text-gray-500">
+                                        Wallet: <WalletAddress address={entry.solanaWalletAddress} />
+                                    </div>
                                 </div>
-                                <div className="text-sm text-gray-600">
-                                    Wallet: <WalletAddress address={entry.solanaWalletAddress} />
+                                <span className="text-sm text-gray-600">Total Streams: {entry.streamCount}</span>
+                                <div className="text-sm text-gray-600 mt-1">
+                                    Bonus Streams: {entry.bonusStreams || 0}
+                                </div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                    Referrals: {entry.referralCount}
                                 </div>
                             </div>
                         ))

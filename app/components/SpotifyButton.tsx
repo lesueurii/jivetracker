@@ -1,14 +1,12 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import upsertStream from '../lib/helpers/upsert-stream';
+import upsertStream from '../utils/upsert-stream';
 import Tooltip from './Tooltip';
+import { generateCodeVerifier, generateCodeChallenge, copyToClipboard } from '../utils/common';
 
-// Move this outside the component to avoid re-creation on each render
 const REDIRECT_URI = typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app';
 
-
-// Define a single app description
 const appDescriptions = [
     "Jive electrifies the dance floor with its infectious rhythm and soulful vibes!",
     "Experience the magic of Jive as it brings people together through music and dance!",
@@ -23,11 +21,12 @@ const appDescriptions = [
 ];
 const appDescription = appDescriptions[Math.floor(Math.random() * appDescriptions.length)];
 
+const truncateDescription = (desc: string, maxLength: number) => {
+    return desc.length > maxLength ? desc.substring(0, maxLength - 3) + '...' : desc;
+};
 
 export default function SpotifyButton() {
-    // Use lazy initialization for state that requires computation
     const [isAuthenticated, setIsAuthenticated] = useState(() => {
-        if (typeof window === 'undefined') return false;
         return !!(localStorage.getItem('spotify_access_token') && sessionStorage.getItem('publicKey'));
     });
     const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +37,7 @@ export default function SpotifyButton() {
     });
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const [copiedText, setCopiedText] = useState('');
+    const [streamCount, setStreamCount] = useState(0);
 
     const runUpsertStream = useCallback(() => {
         const token = localStorage.getItem('spotify_access_token');
@@ -49,62 +49,10 @@ export default function SpotifyButton() {
                 solana_wallet_address: publicKey,
             });
         } else {
-            console.log('Missing token or publicKey for upsertStream');
+            console.error('Missing token or publicKey for upsertStream');
         }
     }, []);
 
-    useEffect(() => {
-        const token = localStorage.getItem('spotify_access_token');
-        const publicKey = sessionStorage.getItem('publicKey');
-
-        if (token && publicKey) {
-            setIsAuthenticated(true);
-
-            // Run immediately
-            runUpsertStream();
-
-            // Set up interval to run every hour
-            intervalRef.current = setInterval(runUpsertStream, 60 * 60 * 1000);
-
-            // Clean up interval on component unmount
-            return () => {
-                if (intervalRef.current) {
-                    clearInterval(intervalRef.current);
-                }
-            };
-        } else {
-            // Check for callback
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            if (code) {
-                exchangeCodeForToken(code);
-            }
-        }
-
-        // Check if client ID exists in local storage
-        const storedClientId = localStorage.getItem('spotify_client_id');
-        if (storedClientId) {
-            setClientId(storedClientId);
-        }
-    }, [runUpsertStream]);
-
-    const generateCodeVerifier = useCallback((length: number) => {
-        let text = '';
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (let i = 0; i < length; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-        }
-        return text;
-    }, []);
-
-    const generateCodeChallenge = useCallback(async (codeVerifier: string) => {
-        const data = new TextEncoder().encode(codeVerifier);
-        const digest = await window.crypto.subtle.digest('SHA-256', data);
-        return btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(digest))))
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=+$/, '');
-    }, []);
 
     const exchangeCodeForToken = useCallback(async (code: string) => {
         setIsLoading(true);
@@ -137,16 +85,56 @@ export default function SpotifyButton() {
             window.history.replaceState({}, document.title, window.location.pathname);
             window.dispatchEvent(new Event('spotifyTokenChanged'));
 
-            // Run upsertStream after successful token exchange
+            console.log('Token exchange successful, running upsertStream');
             runUpsertStream();
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error exchanging code for token:', error);
             // Handle error (e.g., show error message to user)
         } finally {
             setIsLoading(false);
         }
     }, [clientId, runUpsertStream]);
 
+    useEffect(() => {
+        console.log('SpotifyButton useEffect running');
+        const token = localStorage.getItem('spotify_access_token');
+        const publicKey = sessionStorage.getItem('publicKey');
+
+        if (token && publicKey) {
+            console.log('Token and publicKey found, setting up upsertStream');
+            setIsAuthenticated(true);
+
+            // Run immediately
+            runUpsertStream();
+
+            // Set up interval to run every hour
+            const intervalId = setInterval(() => {
+                console.log('Interval triggered, running upsertStream');
+                runUpsertStream();
+            }, 60 * 60 * 1000);
+
+            // Clean up interval on component unmount
+            return () => {
+                console.log('Cleaning up interval');
+                clearInterval(intervalId);
+            };
+        } else {
+            console.log('No token or publicKey found');
+            // Check for callback
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                console.log('Code found in URL, exchanging for token');
+                exchangeCodeForToken(code);
+            }
+        }
+
+        // Check if client ID exists in local storage
+        const storedClientId = localStorage.getItem('spotify_client_id');
+        if (storedClientId) {
+            setClientId(storedClientId);
+        }
+    }, [runUpsertStream, exchangeCodeForToken]);
     const handleLogin = useCallback(() => {
         const storedClientId = localStorage.getItem('spotify_client_id');
         if (storedClientId) {
@@ -202,15 +190,17 @@ export default function SpotifyButton() {
         }
     }, []);
 
-    const copyToClipboard = useCallback((text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            setCopiedText(text);
-            // Reset the copiedText after 2 seconds
-            setTimeout(() => setCopiedText(''), 2000);
-        }).catch((err) => {
-            console.error('Failed to copy: ', err);
+    const handleCopyToClipboard = useCallback((text: string) => {
+        copyToClipboard(text).then((success) => {
+            if (success) {
+                setCopiedText(text);
+                // Reset the copiedText after 2 seconds
+                setTimeout(() => setCopiedText(''), 2000);
+            }
         });
     }, []);
+
+    const truncatedDescription = truncateDescription(appDescription, 50);
 
     if (isLoading) {
         return <div>Processing Spotify authentication...</div>;
@@ -239,19 +229,24 @@ export default function SpotifyButton() {
                             <li>Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Spotify Developer Dashboard</a></li>
                             <li>Click on &quot;Create an App&quot;</li>
                             <li>For App Name, enter <Tooltip text={copiedText === `${sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker` ? 'Copied!' : 'Click to copy'}>
-                                <button onClick={() => copyToClipboard(`${sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker`)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
+                                <button onClick={() => handleCopyToClipboard(`${sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker`)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
                                     {sessionStorage.getItem('publicKey')?.slice(0, 6) || ''} - Jive Tracker
                                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                 </button>
                             </Tooltip></li>
                             <li>For App Description, enter <Tooltip text={copiedText === appDescription ? 'Copied!' : 'Click to copy'}>
-                                <button onClick={() => copyToClipboard(appDescription)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
-                                    {appDescription}
-                                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                <button
+                                    onClick={() => handleCopyToClipboard(appDescription)}
+                                    className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center"
+                                >
+                                    {truncatedDescription}
+                                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
                                 </button>
                             </Tooltip></li>
                             <li>For Redirect URIs, enter: <Tooltip text={copiedText === REDIRECT_URI ? 'Copied!' : 'Click to copy'}>
-                                <button onClick={() => copyToClipboard(REDIRECT_URI)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
+                                <button onClick={() => handleCopyToClipboard(REDIRECT_URI)} className="font-medium text-purple-600 hover:text-purple-800 cursor-pointer inline-flex items-center">
                                     {REDIRECT_URI}
                                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                 </button>

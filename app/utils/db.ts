@@ -19,25 +19,71 @@ export async function getUserBySpotifyId(spotifyUserId: string) {
 
 export async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamRecords: string[], referralCode: string | null) {
     const user = await getUserBySpotifyId(spotifyUserId) || {}
-    const updatedStreamRecords = Array.from(new Set([
-        ...(user.stream_records || []),
-        ...streamRecords
-    ]))
+    const existingStreamRecords = user.stream_records || []
+    const newStreamRecords = streamRecords.filter(record => !existingStreamRecords.includes(record))
+    const updatedStreamRecords = [...existingStreamRecords, ...newStreamRecords]
     const updatedCount = updatedStreamRecords.length
     const bonusStreams = user.bonus_streams || 0
+
+    // Only update referrer if it hasn't been set before
+    if (!user.referrer && referralCode && referralCode !== spotifyUserId) {
+        await incrementReferralCount(referralCode)
+        user.referrer = referralCode
+        // Set the referral_start_stream_count when the referrer is first set
+        user.referral_counted_streams = existingStreamRecords.length
+    }
+
+    // Increment bonus stream count for the referrer
+    if (user.referrer && user.referrer !== spotifyUserId) {
+        const uniqueNewStreamsCount = newStreamRecords.length;
+        await incrementBonusStreamCount(user.referrer, uniqueNewStreamsCount, spotifyUserId)
+    }
+
+    const userReferrals = user.referrals || 0
 
     await updateUser(spotifyUserId, {
         solana_wallet_address: solanaWalletAddress,
         streams: updatedCount,
         stream_records: updatedStreamRecords,
-        bonus_streams: bonusStreams,
-        referral_code: user.referral_code || (updatedCount > 500 ? spotifyUserId : null)
+        bonus_streams: user.bonus_streams || 0,
+        fractional_bonuses: user.fractional_bonuses || {},  // Update this line
+        referrer: user.referrer,
+        referrals: userReferrals,
+        referral_counted_streams: user.referral_counted_streams
     })
 
-    return { updatedCount, bonusStreams }
+    return { updatedCount, bonusStreams, referrals: userReferrals }
 }
 
-export async function getLeaderboard(limit: number, dateRange: string) {
+async function incrementBonusStreamCount(spotifyUserId: string, newStreamsCount: number, referrerId: string) {
+    const user = await getUserBySpotifyId(spotifyUserId)
+    if (user) {
+        const currentBonusStreams = user.bonus_streams || 0
+        const fractionalBonuses = user.fractional_bonuses || {}
+        const currentFractionalBonus = fractionalBonuses[referrerId] || 0
+        const newFractionalBonus = currentFractionalBonus + (newStreamsCount / 4)
+        const newBonusStreams = Math.floor(newFractionalBonus)
+        const remainingFraction = newFractionalBonus - newBonusStreams
+
+        fractionalBonuses[referrerId] = remainingFraction
+
+        await updateUser(spotifyUserId, {
+            bonus_streams: currentBonusStreams + newBonusStreams,
+            fractional_bonuses: fractionalBonuses
+        })
+    }
+}
+
+async function incrementReferralCount(referrerSpotifyId: string) {
+    const referrer = await getUserBySpotifyId(referrerSpotifyId)
+    if (referrer) {
+        await updateUser(referrerSpotifyId, {
+            referrals: (referrer.referrals || 0) + 1
+        })
+    }
+}
+
+export async function getLeaderboard(limit: number, dateRange: string, leaderboardType: 'streams' | 'referrals' = 'streams') {
     const users = await getUsers() || {}
     const now = new Date()
     const dateLimit = getDateLimit(dateRange, now)
@@ -48,10 +94,17 @@ export async function getLeaderboard(limit: number, dateRange: string) {
             return {
                 spotifyUserId,
                 streamCount: validStreams + (userData.bonus_streams || 0),
+                referralCount: userData.referrals || 0,
+                bonusStreams: userData.bonus_streams || 0,
                 solanaWalletAddress: userData.solana_wallet_address
             }
         })
-        .sort((a, b) => b.streamCount - a.streamCount)
+        .sort((a, b) => {
+            if (leaderboardType === 'referrals') {
+                return b.referralCount - a.referralCount
+            }
+            return b.streamCount - a.streamCount
+        })
         .slice(0, limit)
         .map((entry, index) => ({ ...entry, rank: index + 1 }))
 

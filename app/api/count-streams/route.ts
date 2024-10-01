@@ -1,45 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { kv } from '@vercel/kv'
+import { updateStreamCount } from '@/app/utils/db'
 
-// Spotify API base URL
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
-
-// Jive Spotify track ID
 const JIVE_TRACK_ID = '2iFxaYqQX6yNusMzEUiaPf'
 
-export async function GET(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const spotify_access_token = req.nextUrl.searchParams.get('spotify_access_token')
+    const { spotify_access_token, solana_wallet_address, referralCode: referrer } = await request.json()
+
     if (!spotify_access_token) {
-      return NextResponse.json({ message: 'Missing spotify_access_token' }, { status: 400 })
+      return NextResponse.json({ error: 'Missing Spotify access token' }, { status: 400 })
     }
 
-    const { id: spotifyUserId } = await fetchSpotifyUserProfile(spotify_access_token) || {}
-    const users = await kv.get('users') as Record<string, any> | null
-    const streamCount = users?.[spotifyUserId]?.streams ?? null
-
-    return NextResponse.json({ streamCount })
-  } catch (error: any) {
-    return handleError(error)
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const { spotify_access_token, solana_wallet_address } = await req.json()
-    const { id: spotifyUserId } = await fetchSpotifyUserProfile(spotify_access_token)
-
+    const spotifyUser = await fetchSpotifyUserProfile(spotify_access_token)
     const recentStreams = await fetchRecentStreams(spotify_access_token)
 
     const streamRecords = recentStreams.items
       .filter((item: any) => item.track.id === JIVE_TRACK_ID)
       .map((item: any) => item.played_at)
 
+    const { updatedCount, bonusStreams, referrals } = await updateStreamCount(spotifyUser.id, solana_wallet_address, streamRecords, referrer)
 
-    await updateStreamCount(spotifyUserId, solana_wallet_address, streamRecords)
-    return NextResponse.json({ message: 'Stream count updated successfully' })
+    return NextResponse.json({ streamCount: updatedCount, bonusStreams, referrals })
   } catch (error) {
-    return handleError(error)
+    console.error('Error in count-streams:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -57,34 +42,4 @@ async function fetchRecentStreams(accessToken: string) {
   })
   if (!response.ok) throw new Error('Failed to fetch recent streams')
   return response.json()
-}
-
-async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamRecords: string[]) {
-  const usersKey = 'users'
-  const users = await kv.get(usersKey) as Record<string, any> || {}
-
-  const existingUser = users[spotifyUserId] || {}
-  const updatedStreamRecords = Array.from(new Set([
-    ...(existingUser.stream_records || []),
-    ...(streamRecords || [])
-  ]))
-  const updatedCount = updatedStreamRecords.length
-
-  users[spotifyUserId] = {
-    ...existingUser,
-    solana_wallet_address: solanaWalletAddress,
-    streams: updatedCount,
-    stream_records: updatedStreamRecords
-  }
-
-  await kv.set(usersKey, users)
-}
-
-function handleError(error: any) {
-  if (error.message === 'Failed to fetch Spotify user profile') {
-    return NextResponse.json({ message: 'Refresh Token' }, { status: 401 })
-  }
-
-  console.error('Error processing request:', error)
-  return NextResponse.json({ message: 'Error processing request' }, { status: 500 })
 }

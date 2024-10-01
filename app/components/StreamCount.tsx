@@ -1,30 +1,58 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Tooltip from './Tooltip'
+import { formatDistanceToNow } from 'date-fns';
+
+interface StreamCountData {
+    streamCount: number;
+    bonusStreams: number;
+    lastUpdated: string;
+}
 
 export default function StreamCount() {
-    const [streamCount, setStreamCount] = useState(0)
-
-    const fetchStreamCount = () => {
-        const spotifyAccessToken = localStorage.getItem('spotify_access_token');
-        if (spotifyAccessToken) {
-            fetch(`/api/count-streams?spotify_access_token=${encodeURIComponent(spotifyAccessToken)}`)
-                .then(response => response.json())
-                .then(data => setStreamCount(data.streamCount))
-        }
-    }
+    const [streamCountData, setStreamCountData] = useState<StreamCountData>({
+        streamCount: 0,
+        bonusStreams: 0,
+        lastUpdated: ''
+    });
 
     useEffect(() => {
-        fetchStreamCount();
-
-        // Add event listener for stream count updates
-        window.addEventListener('streamCountUpdated', fetchStreamCount);
-
-        // Clean up the event listener on component unmount
-        return () => {
-            window.removeEventListener('streamCountUpdated', fetchStreamCount);
+        const loadStreamCountData = () => {
+            const storedData = localStorage.getItem('streamCountData');
+            if (storedData) {
+                setStreamCountData(JSON.parse(storedData));
+            }
         };
-    }, [])
 
-    return <span>{streamCount || 0}</span>
+        loadStreamCountData();
+
+        const handleStreamCountUpdate = () => loadStreamCountData();
+        window.addEventListener('streamCountUpdated', handleStreamCountUpdate);
+
+        return () => {
+            window.removeEventListener('streamCountUpdated', handleStreamCountUpdate);
+        };
+    }, []);
+
+    const { streamCount, bonusStreams, lastUpdated } = streamCountData;
+    const totalStreams = streamCount + bonusStreams;
+
+    const formattedLastUpdated = lastUpdated
+        ? `Last updated ${formatDistanceToNow(new Date(lastUpdated))} ago`
+        : 'Not updated yet';
+
+    return (
+        <div className="bg-white p-4 rounded-md shadow">
+            <div className="text-2xl font-bold text-center">
+                <Tooltip text={`Bonus streams: ${bonusStreams}`}>
+                    <span className="text-2xl font-bold">{totalStreams}</span>
+                </Tooltip>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">{formattedLastUpdated}</div>
+            <div className="text-xs text-gray-400 mt-1">
+                Stream count refreshes automatically every hour.
+            </div>
+        </div>
+    )
 }
