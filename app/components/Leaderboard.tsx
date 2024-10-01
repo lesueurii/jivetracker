@@ -11,7 +11,7 @@ interface LeaderboardEntry {
     streamCount: number;
     bonusStreams?: number;  // Make bonusStreams optional
     solanaWalletAddress: string;
-    referralCount: number;  // Add this line
+    referralCount: number;
 }
 
 export default function Leaderboard() {
@@ -41,7 +41,7 @@ export default function Leaderboard() {
                     const processedLeaderboard = data.leaderboard.map((entry: LeaderboardEntry) => ({
                         ...entry,
                         bonusStreams: entry.bonusStreams || 0,
-                        referralCount: entry.referralCount || 0  // Add this line
+                        referralCount: entry.referralCount || 0
                     }));
                     setLeaderboard(processedLeaderboard);
                     if (isButtonClick) {
