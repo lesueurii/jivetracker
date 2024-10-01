@@ -11,6 +11,7 @@ interface LeaderboardEntry {
     streamCount: number;
     bonusCount?: number;  // Make bonusCount optional
     solanaWalletAddress: string;
+    referralCount: number;  // Add this line
 }
 
 export default function Leaderboard() {
@@ -37,10 +38,10 @@ export default function Leaderboard() {
             .then(response => response.json())
             .then(data => {
                 if (data && data.leaderboard && Array.isArray(data.leaderboard)) {
-                    // Set default bonusCount to 0 if it's not provided
                     const processedLeaderboard = data.leaderboard.map((entry: LeaderboardEntry) => ({
                         ...entry,
-                        bonusCount: entry.bonusCount || 0
+                        bonusCount: entry.bonusCount || 0,
+                        referralCount: entry.referralCount || 0  // Add this line
                     }));
                     setLeaderboard(processedLeaderboard);
                     if (isButtonClick) {
@@ -151,6 +152,7 @@ export default function Leaderboard() {
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solana Wallet</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Streams</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bonus Streams</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrals</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -163,11 +165,12 @@ export default function Leaderboard() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.streamCount + (entry.bonusCount || 0)}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.bonusCount || 0}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.referralCount}</td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No entries in the leaderboard yet.</td>
+                                    <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No entries in the leaderboard yet.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -179,13 +182,16 @@ export default function Leaderboard() {
                             <div key={entry.solanaWalletAddress} className="bg-white shadow rounded-lg p-4 mb-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-lg font-semibold">#{entry.rank}</span>
-                                    <span className="text-sm text-gray-500">{entry.streamCount + (entry.bonusCount || 0)} total streams</span>
+                                    <div className="text-sm text-gray-500">
+                                        Wallet: <WalletAddress address={entry.solanaWalletAddress} />
+                                    </div>
                                 </div>
-                                <div className="text-sm text-gray-600">
-                                    Wallet: <WalletAddress address={entry.solanaWalletAddress} />
-                                </div>
+                                <span className="text-sm text-gray-600">Total Streams: {entry.streamCount + (entry.bonusCount || 0)}</span>
                                 <div className="text-sm text-gray-600 mt-1">
                                     Bonus Streams: {entry.bonusCount || 0}
+                                </div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                    Referrals: {entry.referralCount}
                                 </div>
                             </div>
                         ))

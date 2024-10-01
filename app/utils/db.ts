@@ -19,10 +19,9 @@ export async function getUserBySpotifyId(spotifyUserId: string) {
 
 export async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamRecords: string[], referralCode: string | null) {
     const user = await getUserBySpotifyId(spotifyUserId) || {}
-    const updatedStreamRecords = Array.from(new Set([
-        ...(user.stream_records || []),
-        ...streamRecords
-    ]))
+    const existingStreamRecords = user.stream_records || []
+    const newStreamRecords = streamRecords.filter(record => !existingStreamRecords.includes(record))
+    const updatedStreamRecords = [...existingStreamRecords, ...newStreamRecords]
     const updatedCount = updatedStreamRecords.length
     const bonusStreams = user.bonus_streams || 0
 
@@ -30,6 +29,13 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
     if (!user.referrer && referralCode && referralCode !== spotifyUserId) {
         await incrementReferralCount(referralCode)
         user.referrer = referralCode
+        // Set the referral_start_stream_count when the referrer is first set
+        user.referral_start_stream_count = existingStreamRecords.length
+    }
+
+    // Increment bonus stream count for the referrer
+    if (user.referrer && user.referrer !== spotifyUserId) {
+        await incrementBonusStreamCount(user.referrer, updatedCount - (user.referral_start_stream_count || 0))
     }
 
     await updateUser(spotifyUserId, {
@@ -37,11 +43,25 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
         streams: updatedCount,
         stream_records: updatedStreamRecords,
         bonus_streams: bonusStreams,
-        referrer: user.referrer || spotifyUserId,
-        referrals: user.referrals || 0
+        referrer: user.referrer,
+        referrals: user.referrals || 0,
+        referral_start_stream_count: user.referral_start_stream_count
     })
 
     return { updatedCount, bonusStreams }
+}
+
+async function incrementBonusStreamCount(spotifyUserId: string, newStreamsCount: number) {
+    const user = await getUserBySpotifyId(spotifyUserId)
+    if (user) {
+        const currentBonusStreams = user.bonus_streams || 0
+        const newBonusStreams = Math.floor(newStreamsCount / 4)
+        if (newBonusStreams > 0) {
+            await updateUser(spotifyUserId, {
+                bonus_streams: currentBonusStreams + newBonusStreams
+            })
+        }
+    }
 }
 
 async function incrementReferralCount(referrerSpotifyId: string) {

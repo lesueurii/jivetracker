@@ -37,7 +37,6 @@ export default function StreamCount() {
 
     const { streamCount, bonusStreams, lastUpdated } = streamCountData;
     const totalStreams = streamCount + bonusStreams;
-    const tooltipText = `Referral Streams: ${bonusStreams}`;
 
     const formattedLastUpdated = lastUpdated
         ? `Last updated ${formatDistanceToNow(new Date(lastUpdated))} ago`
@@ -46,13 +45,13 @@ export default function StreamCount() {
     return (
         <div className="bg-white p-4 rounded-md shadow">
             <div className="text-2xl font-bold text-center">
-                <Tooltip text={tooltipText}>
+                <Tooltip text={`Bonus streams: ${bonusStreams}`}>
                     <span className="text-2xl font-bold">{totalStreams}</span>
                 </Tooltip>
             </div>
             <div className="text-xs text-gray-400 mt-1">{formattedLastUpdated}</div>
             <div className="text-xs text-gray-400 mt-1">
-                Stream count refreshes automatically every hour
+                Stream count refreshes automatically every hour.
             </div>
         </div>
     )

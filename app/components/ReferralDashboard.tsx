@@ -6,7 +6,7 @@ export default function ReferralDashboard() {
     const [isLoading, setIsLoading] = useState(false);
     const [spotifyUserId, setSpotifyUserId] = useState<string | null>(null);
     const [bonusStreams, setBonusStreams] = useState(0);
-    const [generatedStreams, setGeneratedStreams] = useState(0);
+    const [referrals, setReferrals] = useState(0);
 
     const getSpotifyUserId = async () => {
         let token = localStorage.getItem('spotify_access_token');
@@ -51,13 +51,23 @@ export default function ReferralDashboard() {
     useEffect(() => {
         getSpotifyUserId();
         fetchReferralStats();
+
+        // Add event listener for streamCountUpdated
+        window.addEventListener('streamCountUpdated', fetchReferralStats);
+
+        // Cleanup function
+        return () => {
+            window.removeEventListener('streamCountUpdated', fetchReferralStats);
+        };
     }, []);
 
-    const fetchReferralStats = async () => {
-        // This is a placeholder. You'll need to implement an API endpoint to fetch these stats.
-        // For now, we'll use dummy data.
-        setBonusStreams(10);
-        setGeneratedStreams(40);
+    const fetchReferralStats = () => {
+        const streamCountData = localStorage.getItem('streamCountData');
+        if (streamCountData) {
+            const { bonusStreams, referrals } = JSON.parse(streamCountData);
+            setBonusStreams(bonusStreams);
+            setReferrals(referrals || 0);
+        }
     };
 
     const generateReferralLink = useCallback(() => {
@@ -114,8 +124,8 @@ export default function ReferralDashboard() {
             </div>
             <div className="grid grid-cols-2 gap-8 mb-8">
                 <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <p className="text-5xl font-bold text-green-600 mb-2">{generatedStreams}</p>
-                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Generated Streams</p>
+                    <p className="text-5xl font-bold text-green-600 mb-2">{referrals}</p>
+                    <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Your Referrals</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-6 text-center">
                     <p className="text-5xl font-bold text-blue-600 mb-2">{bonusStreams}</p>
