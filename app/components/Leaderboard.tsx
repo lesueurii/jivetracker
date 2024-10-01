@@ -9,7 +9,7 @@ interface LeaderboardEntry {
     rank: number;
     spotifyUserId: string;
     streamCount: number;
-    bonusCount?: number;  // Make bonusCount optional
+    bonusStreams?: number;  // Make bonusStreams optional
     solanaWalletAddress: string;
     referralCount: number;  // Add this line
 }
@@ -40,7 +40,7 @@ export default function Leaderboard() {
                 if (data && data.leaderboard && Array.isArray(data.leaderboard)) {
                     const processedLeaderboard = data.leaderboard.map((entry: LeaderboardEntry) => ({
                         ...entry,
-                        bonusCount: entry.bonusCount || 0,
+                        bonusStreams: entry.bonusStreams || 0,
                         referralCount: entry.referralCount || 0  // Add this line
                     }));
                     setLeaderboard(processedLeaderboard);
@@ -163,8 +163,8 @@ export default function Leaderboard() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <WalletAddress address={entry.solanaWalletAddress} />
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.streamCount + (entry.bonusCount || 0)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.bonusCount || 0}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.streamCount}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.bonusStreams || 0}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.referralCount}</td>
                                     </tr>
                                 ))
@@ -186,9 +186,9 @@ export default function Leaderboard() {
                                         Wallet: <WalletAddress address={entry.solanaWalletAddress} />
                                     </div>
                                 </div>
-                                <span className="text-sm text-gray-600">Total Streams: {entry.streamCount + (entry.bonusCount || 0)}</span>
+                                <span className="text-sm text-gray-600">Total Streams: {entry.streamCount}</span>
                                 <div className="text-sm text-gray-600 mt-1">
-                                    Bonus Streams: {entry.bonusCount || 0}
+                                    Bonus Streams: {entry.bonusStreams || 0}
                                 </div>
                                 <div className="text-sm text-gray-600 mt-1">
                                     Referrals: {entry.referralCount}

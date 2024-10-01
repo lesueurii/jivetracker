@@ -35,8 +35,11 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
 
     // Increment bonus stream count for the referrer
     if (user.referrer && user.referrer !== spotifyUserId) {
-        await incrementBonusStreamCount(user.referrer, updatedCount - (user.referral_start_stream_count || 0))
+        const uniqueNewStreamsCount = newStreamRecords.length
+        await incrementBonusStreamCount(user.referrer, uniqueNewStreamsCount)
     }
+
+    const userReferrals = user.referrals || 0
 
     await updateUser(spotifyUserId, {
         solana_wallet_address: solanaWalletAddress,
@@ -44,11 +47,11 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
         stream_records: updatedStreamRecords,
         bonus_streams: bonusStreams,
         referrer: user.referrer,
-        referrals: user.referrals || 0,
+        referrals: userReferrals,
         referral_start_stream_count: user.referral_start_stream_count
     })
 
-    return { updatedCount, bonusStreams }
+    return { updatedCount, bonusStreams, referrals: userReferrals }
 }
 
 async function incrementBonusStreamCount(spotifyUserId: string, newStreamsCount: number) {
@@ -85,6 +88,7 @@ export async function getLeaderboard(limit: number, dateRange: string, leaderboa
                 spotifyUserId,
                 streamCount: validStreams + (userData.bonus_streams || 0),
                 referralCount: userData.referrals || 0,
+                bonusStreams: userData.bonus_streams || 0,
                 solanaWalletAddress: userData.solana_wallet_address
             }
         })

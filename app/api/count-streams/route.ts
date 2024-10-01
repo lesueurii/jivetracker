@@ -19,9 +19,9 @@ export async function POST(request: Request) {
       .filter((item: any) => item.track.id === JIVE_TRACK_ID)
       .map((item: any) => item.played_at)
 
-    const { updatedCount, bonusStreams } = await updateStreamCount(spotifyUser.id, solana_wallet_address, streamRecords, referrer)
+    const { updatedCount, bonusStreams, referrals } = await updateStreamCount(spotifyUser.id, solana_wallet_address, streamRecords, referrer)
 
-    return NextResponse.json({ streamCount: updatedCount, bonusStreams })
+    return NextResponse.json({ streamCount: updatedCount, bonusStreams, referrals })
   } catch (error) {
     console.error('Error in count-streams:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
