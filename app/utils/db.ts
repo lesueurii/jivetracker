@@ -36,7 +36,7 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
     // Increment bonus stream count for the referrer
     if (user.referrer && user.referrer !== spotifyUserId) {
         const uniqueNewStreamsCount = newStreamRecords.length;
-        await incrementBonusStreamCount(user.referrer, uniqueNewStreamsCount)
+        await incrementBonusStreamCount(user.referrer, uniqueNewStreamsCount, spotifyUserId)
     }
 
     const userReferrals = user.referrals || 0
@@ -46,7 +46,7 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
         streams: updatedCount,
         stream_records: updatedStreamRecords,
         bonus_streams: user.bonus_streams || 0,
-        fractional_bonus: user.fractional_bonus || 0,
+        fractional_bonuses: user.fractional_bonuses || {},  // Update this line
         referrer: user.referrer,
         referrals: userReferrals,
         referral_counted_streams: user.referral_counted_streams
@@ -55,18 +55,21 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
     return { updatedCount, bonusStreams, referrals: userReferrals }
 }
 
-async function incrementBonusStreamCount(spotifyUserId: string, newStreamsCount: number) {
+async function incrementBonusStreamCount(spotifyUserId: string, newStreamsCount: number, referrerId: string) {
     const user = await getUserBySpotifyId(spotifyUserId)
     if (user) {
         const currentBonusStreams = user.bonus_streams || 0
-        const currentFractionalBonus = user.fractional_bonus || 0
+        const fractionalBonuses = user.fractional_bonuses || {}
+        const currentFractionalBonus = fractionalBonuses[referrerId] || 0
         const newFractionalBonus = currentFractionalBonus + (newStreamsCount / 4)
         const newBonusStreams = Math.floor(newFractionalBonus)
         const remainingFraction = newFractionalBonus - newBonusStreams
 
+        fractionalBonuses[referrerId] = remainingFraction
+
         await updateUser(spotifyUserId, {
             bonus_streams: currentBonusStreams + newBonusStreams,
-            fractional_bonus: remainingFraction
+            fractional_bonuses: fractionalBonuses
         })
     }
 }
