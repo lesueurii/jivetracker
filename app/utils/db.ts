@@ -30,12 +30,12 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
         await incrementReferralCount(referralCode)
         user.referrer = referralCode
         // Set the referral_start_stream_count when the referrer is first set
-        user.referral_start_stream_count = existingStreamRecords.length
+        user.referral_counted_streams = existingStreamRecords.length
     }
 
     // Increment bonus stream count for the referrer
     if (user.referrer && user.referrer !== spotifyUserId) {
-        const uniqueNewStreamsCount = newStreamRecords.length
+        const uniqueNewStreamsCount = newStreamRecords.length;
         await incrementBonusStreamCount(user.referrer, uniqueNewStreamsCount)
     }
 
@@ -45,10 +45,11 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
         solana_wallet_address: solanaWalletAddress,
         streams: updatedCount,
         stream_records: updatedStreamRecords,
-        bonus_streams: bonusStreams,
+        bonus_streams: user.bonus_streams || 0,
+        fractional_bonus: user.fractional_bonus || 0,
         referrer: user.referrer,
         referrals: userReferrals,
-        referral_start_stream_count: user.referral_start_stream_count
+        referral_counted_streams: user.referral_counted_streams
     })
 
     return { updatedCount, bonusStreams, referrals: userReferrals }
@@ -58,12 +59,15 @@ async function incrementBonusStreamCount(spotifyUserId: string, newStreamsCount:
     const user = await getUserBySpotifyId(spotifyUserId)
     if (user) {
         const currentBonusStreams = user.bonus_streams || 0
-        const newBonusStreams = Math.floor(newStreamsCount / 4)
-        if (newBonusStreams > 0) {
-            await updateUser(spotifyUserId, {
-                bonus_streams: currentBonusStreams + newBonusStreams
-            })
-        }
+        const currentFractionalBonus = user.fractional_bonus || 0
+        const newFractionalBonus = currentFractionalBonus + (newStreamsCount / 4)
+        const newBonusStreams = Math.floor(newFractionalBonus)
+        const remainingFraction = newFractionalBonus - newBonusStreams
+
+        await updateUser(spotifyUserId, {
+            bonus_streams: currentBonusStreams + newBonusStreams,
+            fractional_bonus: remainingFraction
+        })
     }
 }
 
