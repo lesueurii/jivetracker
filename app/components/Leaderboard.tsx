@@ -84,19 +84,27 @@ export default function Leaderboard() {
         });
     };
 
-    const WalletAddress = ({ address }: { address: string }) => (
-        <Tooltip text={address}>
-            <span
-                className="cursor-pointer hover:text-blue-500"
-                onClick={(e) => {
-                    e.stopPropagation(); // Prevent the tooltip from interfering
-                    handleCopyToClipboard(address);
-                }}
-            >
-                {getAbbreviatedAddress(address)}
-            </span>
-        </Tooltip>
-    );
+    const WalletAddress = ({ address }: { address: string }) => {
+        const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+        const addressRef = useRef<HTMLSpanElement>(null);
+
+        return (
+            <Tooltip text={address} visible={isTooltipVisible} targetRef={addressRef}>
+                <span
+                    ref={addressRef}
+                    className="cursor-pointer hover:text-blue-500"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyToClipboard(address);
+                    }}
+                    onMouseEnter={() => setIsTooltipVisible(true)}
+                    onMouseLeave={() => setIsTooltipVisible(false)}
+                >
+                    {getAbbreviatedAddress(address)}
+                </span>
+            </Tooltip>
+        );
+    };
 
     return (
         <>
