@@ -27,10 +27,13 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
 
     // Only update referrer if it hasn't been set before
     if (!user.referrer && referralCode && referralCode !== spotifyUserId) {
-        await incrementReferralCount(referralCode)
-        user.referrer = referralCode
-        // Set the referral_start_stream_count when the referrer is first set
-        user.referral_counted_streams = existingStreamRecords.length
+        const referrer = await getUserBySpotifyId(referralCode)
+        if (referrer) {
+            await incrementReferralCount(referralCode, referrer)
+            user.referrer = referralCode
+            // Set the referral_start_stream_count when the referrer is first set
+            user.referral_counted_streams = existingStreamRecords.length
+        }
     }
 
     // Increment bonus stream count for the referrer
@@ -74,13 +77,10 @@ async function incrementBonusStreamCount(spotifyUserId: string, newStreamsCount:
     }
 }
 
-async function incrementReferralCount(referrerSpotifyId: string) {
-    const referrer = await getUserBySpotifyId(referrerSpotifyId)
-    if (referrer) {
-        await updateUser(referrerSpotifyId, {
-            referrals: (referrer.referrals || 0) + 1
-        })
-    }
+async function incrementReferralCount(referrerSpotifyId: string, referrer: any) {
+    await updateUser(referrerSpotifyId, {
+        referrals: (referrer.referrals || 0) + 1
+    })
 }
 
 export async function getLeaderboard(limit: number, dateRange: string, leaderboardType: 'streams' | 'referrals' = 'streams') {
