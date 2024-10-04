@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import upsertStream from '../utils/upsert-stream';
 import Tooltip from './Tooltip';
 import { generateCodeVerifier, generateCodeChallenge, copyToClipboard } from '../utils/common';
-
+import { handleTokenExpiration } from '../utils/spotify';
 const REDIRECT_URI = typeof window !== 'undefined' ? window.location.origin : 'https://jivetracker.vercel.app';
 
 const appDescriptions = [
@@ -110,8 +110,9 @@ export default function SpotifyButton() {
             // Set up interval to run every hour
             const intervalId = setInterval(() => {
                 console.log('Interval triggered, running upsertStream');
+                handleTokenExpiration(localStorage.getItem('spotify_refresh_token') || '', clientId);
                 runUpsertStream();
-            }, 60 * 60 * 1000);
+            }, 60 * 55 * 1000);
 
             // Clean up interval on component unmount
             return () => {
