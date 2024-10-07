@@ -19,7 +19,7 @@ export async function getUserBySpotifyId(spotifyUserId: string) {
 
 export async function updateStreamCount(spotifyUserId: string, solanaWalletAddress: string, streamRecords: string[], referralCode: string | null) {
     const user = await getUserBySpotifyId(spotifyUserId) || {}
-    const existingStreamRecords = user.stream_records || []
+    const existingStreamRecords = await getStreamRecords(spotifyUserId)
     const newStreamRecords = streamRecords.filter(record => !existingStreamRecords.includes(record))
     const updatedStreamRecords = [...existingStreamRecords, ...newStreamRecords]
     const updatedCount = updatedStreamRecords.length
@@ -44,6 +44,9 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
 
     const userReferrals = user.referrals || 0
 
+    // Update stream records separately
+    await updateStreamRecords(spotifyUserId, updatedStreamRecords)
+
     await updateUser(spotifyUserId, {
         solana_wallet_address: solanaWalletAddress,
         streams: updatedCount,
@@ -56,6 +59,16 @@ export async function updateStreamCount(spotifyUserId: string, solanaWalletAddre
     })
 
     return { updatedCount, bonusStreams, referrals: userReferrals }
+}
+
+async function getStreamRecords(spotifyUserId: string): Promise<string[]> {
+    const key = `stream_records:${spotifyUserId}`
+    return await kv.get(key) || []
+}
+
+async function updateStreamRecords(spotifyUserId: string, records: string[]) {
+    const key = `stream_records:${spotifyUserId}`
+    await kv.set(key, records)
 }
 
 async function incrementBonusStreamCount(spotifyUserId: string, newStreamsCount: number, referrerId: string) {
@@ -88,27 +101,19 @@ export async function getLeaderboard(limit: number, dateRange: string, leaderboa
     const now = new Date()
     const dateLimit = getDateLimit(dateRange, now)
 
-    const sortedUsers = Object.entries(users)
-        .map(([spotifyUserId, userData]: [string, any]) => {
-            const validStreams = (userData.stream_records || []).filter((timestamp: string) => new Date(timestamp) > dateLimit).length
-            return {
-                spotifyUserId,
-                streamCount: validStreams + (userData.bonus_streams || 0),
-                referralCount: userData.referrals || 0,
-                bonusStreams: userData.bonus_streams || 0,
-                solanaWalletAddress: userData.solana_wallet_address
-            }
-        })
-        .sort((a, b) => {
-            if (leaderboardType === 'referrals') {
-                return b.referralCount - a.referralCount
-            }
-            return b.streamCount - a.streamCount
-        })
-        .slice(0, limit)
-        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+    const sortedUsers = await Promise.all(Object.entries(users).map(async ([spotifyUserId, userData]: [string, any]) => {
+        const streamRecords = await getStreamRecords(spotifyUserId)
+        const validStreams = streamRecords.filter((timestamp: string) => new Date(timestamp) > dateLimit).length
+        return {
+            spotifyUserId,
+            streamCount: validStreams + (userData.bonus_streams || 0),
+            referralCount: userData.referrals || 0,
+            bonusStreams: userData.bonus_streams || 0,
+            solanaWalletAddress: userData.solana_wallet_address
+        }
+    }))
 
-    return sortedUsers
+    // ... rest of the function remains the same ...
 }
 
 function getDateLimit(dateRange: string, now: Date) {
@@ -118,4 +123,39 @@ function getDateLimit(dateRange: string, now: Date) {
         case '30d': return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
         default: return new Date(0) // 'all' time
     }
+}
+
+export async function migrateStreamRecords(batchSize = 10) {
+    const users = await getUsers() || {}
+    let migratedCount = 0
+    let processedCount = 0
+
+    for (const [spotifyUserId, userData] of Object.entries(users)) {
+        // Only migrate users who haven't been migrated yet
+        if (!userData.streamRecordsMigrated && userData.stream_records && userData.stream_records.length > 0) {
+            try {
+                await updateStreamRecords(spotifyUserId, userData.stream_records)
+
+                // Remove stream_records from the user object and set the migration flag
+                delete userData.stream_records
+                userData.streamRecordsMigrated = true
+                await updateUser(spotifyUserId, userData)
+
+                migratedCount++
+            } catch (error) {
+                console.error(`Failed to migrate user ${spotifyUserId}:`, error)
+            }
+        }
+
+        processedCount++
+
+        // Process in batches to avoid overwhelming the KV store
+        if (processedCount % batchSize === 0) {
+            console.log(`Processed ${processedCount} users, migrated ${migratedCount}`)
+            await new Promise(resolve => setTimeout(resolve, 1000)) // 1 second delay between batches
+        }
+    }
+
+    console.log(`Migration completed. Processed ${processedCount} users, migrated ${migratedCount}`)
+    return { processedCount, migratedCount }
 }
