@@ -33,14 +33,14 @@ export default function Home() {
         <div className="flex flex-wrap items-center justify-around max-w-4xl my-8 sm:w-full bg-white rounded-md shadow-xl h-full border border-gray-100">
           <div className="mx-8 w-full mt-8">
             <h3 className="text-xl font-semibold mb-1">
-              Track Your Stats
+              The competition is now over! Stay tuned in the Telegram for more details.
             </h3>
-            <HowItWorks />
-            <RegistrationForm />
+            {/* <HowItWorks />
+            <RegistrationForm /> */}
           </div>
           <hr className="border-1 border-gray-200 my-8 mx-8 w-full" />
           <div className="mx-8 w-full">
-            <Leaderboard />
+            {/* <Leaderboard /> */}
             <div className="flex flex-col sm:flex-row justify-between items-center">
               <p
                 className="flex items-center my-8 w-full justify-center sm:justify-start text-gray-500"
